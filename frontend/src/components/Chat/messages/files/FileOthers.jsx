@@ -22,7 +22,7 @@ export default function FileOthers({ file, type, me }) {
         </div>
         {/*Download button*/}
         {!me && (
-          <a href={file.secure_url} target="_blank" download>
+          <a href={file.secure_url} target="_blank" rel="noreferrer" download>
             <DownloadIcon />
           </a>
         )}

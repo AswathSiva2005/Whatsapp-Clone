@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { checkOnlineStatus, getConversationId } from "../../../utils/chat";
+import { checkOnlineStatus } from "../../../utils/chat";
 import Conversation from "./Conversation";
 
 export default function Conversations({
@@ -19,7 +19,7 @@ export default function Conversations({
       (c) =>
         c.latestMessage ||
         c._id === activeConversation._id ||
-        c.isGroup == true
+        c.isGroup === true
     )
     .filter((conversation) => {
       if (activeView === "favorites") {
