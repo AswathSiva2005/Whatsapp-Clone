@@ -28,6 +28,9 @@ export default function Conversations({
       if (activeView === "unread") {
         return (unreadByConversation[conversation._id] || 0) > 0;
       }
+      if (activeView === "groups") {
+        return conversation.isGroup === true;
+      }
       return true;
     });
 

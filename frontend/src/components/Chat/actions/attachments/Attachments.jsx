@@ -5,6 +5,7 @@ export default function Attachments({
   showAttachments,
   setShowAttachments,
   setShowPicker,
+  onCreatePoll,
 }) {
   return (
     <li className="relative">
@@ -19,7 +20,9 @@ export default function Attachments({
         <AttachmentIcon className="dark:fill-dark_svg_1" />
       </button>
       {/*Menu*/}
-      {showAttachments ? <Menu /> : null}
+      {showAttachments ? (
+        <Menu onCreatePoll={onCreatePoll} setShowAttachments={setShowAttachments} />
+      ) : null}
     </li>
   );
 }

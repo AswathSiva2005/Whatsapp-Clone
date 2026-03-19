@@ -22,7 +22,7 @@ function HandleAndSend({ activeIndex, setActiveIndex, message, socket }) {
     e.preventDefault();
     setLoading(true);
     //uplaod files first
-    const uploaded_files = await uploadFiles(files);
+    const uploaded_files = await uploadFiles(files, token);
     //send the message
     const values = {
       token,

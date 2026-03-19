@@ -3,6 +3,7 @@ import SocketContext from "../../../context/SocketContext";
 import {
   clearUnreadForConversation,
   open_create_conversation,
+  setActiveConversation,
 } from "../../../features/chatSlice";
 import {
   getConversationId,
@@ -24,6 +25,13 @@ function Conversation({ convo, socket, online, typing, unreadCount = 0 }) {
     token,
   };
   const openConversation = async () => {
+    if (convo.isGroup) {
+      dispatch(setActiveConversation(convo));
+      socket.emit("join conversation", convo._id);
+      dispatch(clearUnreadForConversation(convo._id));
+      return;
+    }
+
     let newConvo = await dispatch(open_create_conversation(values));
     socket.emit("join conversation", newConvo.payload._id);
     dispatch(clearUnreadForConversation(convo._id));

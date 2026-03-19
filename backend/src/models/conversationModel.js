@@ -11,6 +11,12 @@ const conversationSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 300,
+    },
     isGroup: {
       type: Boolean,
       required: true,
@@ -30,6 +36,24 @@ const conversationSchema = mongoose.Schema(
       type: ObjectId,
       ref: "UserModel",
     },
+    disappearingSettings: [
+      {
+        user: {
+          type: ObjectId,
+          ref: "UserModel",
+          required: true,
+        },
+        mode: {
+          type: String,
+          enum: ["off", "timed"],
+          default: "off",
+        },
+        seconds: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
   },
   {
     collection: "conversations",

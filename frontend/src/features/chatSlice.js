@@ -71,7 +71,7 @@ export const getConversationMessages = createAsyncThunk(
 export const sendMessage = createAsyncThunk(
   "message/send",
   async (values, { rejectWithValue }) => {
-    const { token, message, convo_id, files } = values;
+    const { token, message, convo_id, files, poll } = values;
     try {
       const { data } = await axios.post(
         MESSAGE_ENDPOINT,
@@ -79,6 +79,7 @@ export const sendMessage = createAsyncThunk(
           message,
           convo_id,
           files,
+          poll,
         },
         {
           headers: {
@@ -95,11 +96,130 @@ export const sendMessage = createAsyncThunk(
 export const createGroupConversation = createAsyncThunk(
   "conervsation/create_group",
   async (values, { rejectWithValue }) => {
-    const { token, name, users } = values;
+    const { token, name, users, description, picture } = values;
     try {
       const { data } = await axios.post(
         `${CONVERSATION_ENDPOINT}/group`,
-        { name, users },
+        { name, users, description, picture },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response.data.error.message);
+    }
+  }
+);
+export const updateGroupConversation = createAsyncThunk(
+  "conervsation/update_group",
+  async (values, { rejectWithValue }) => {
+    const { token, conversationId, name, description, picture } = values;
+    try {
+      const { data } = await axios.patch(
+        `${CONVERSATION_ENDPOINT}/group/${conversationId}`,
+        { name, description, picture },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response.data.error.message);
+    }
+  }
+);
+export const addMembersToGroupConversation = createAsyncThunk(
+  "conervsation/add_members",
+  async (values, { rejectWithValue }) => {
+    const { token, conversationId, users } = values;
+    try {
+      const { data } = await axios.post(
+        `${CONVERSATION_ENDPOINT}/group/${conversationId}/members`,
+        { users },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response.data.error.message);
+    }
+  }
+);
+export const removeMemberFromGroupConversation = createAsyncThunk(
+  "conervsation/remove_member",
+  async (values, { rejectWithValue }) => {
+    const { token, conversationId, memberId } = values;
+    try {
+      const { data } = await axios.delete(
+        `${CONVERSATION_ENDPOINT}/group/${conversationId}/members/${memberId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response.data.error.message);
+    }
+  }
+);
+export const exitGroupConversation = createAsyncThunk(
+  "conervsation/exit_group",
+  async (values, { rejectWithValue }) => {
+    const { token, conversationId } = values;
+    try {
+      const { data } = await axios.post(
+        `${CONVERSATION_ENDPOINT}/group/${conversationId}/exit`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response.data.error.message);
+    }
+  }
+);
+export const setDisappearingMessagesSetting = createAsyncThunk(
+  "conervsation/disappearing",
+  async (values, { rejectWithValue }) => {
+    const { token, conversationId, mode, seconds } = values;
+    try {
+      const { data } = await axios.patch(
+        `${CONVERSATION_ENDPOINT}/${conversationId}/disappearing`,
+        { mode, seconds },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response.data.error.message);
+    }
+  }
+);
+export const votePollMessage = createAsyncThunk(
+  "message/vote_poll",
+  async (values, { rejectWithValue }) => {
+    const { token, messageId, optionIndex } = values;
+    try {
+      const { data } = await axios.patch(
+        `${MESSAGE_ENDPOINT}/${messageId}/poll/vote`,
+        { optionIndex },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -209,6 +329,20 @@ export const chatSlice = createSlice({
       const messageId = action.payload;
       state.messages = state.messages.filter((m) => m._id !== messageId);
     },
+    upsertConversationFromServer: (state, action) => {
+      const conversation = action.payload;
+      if (!conversation?._id) return;
+
+      const list = [...state.conversations].filter(
+        (c) => c._id !== conversation._id
+      );
+      list.unshift(conversation);
+      state.conversations = list;
+
+      if (state.activeConversation?._id === conversation._id) {
+        state.activeConversation = conversation;
+      }
+    },
   },
   extraReducers(builder) {
     builder
@@ -277,6 +411,97 @@ export const chatSlice = createSlice({
       .addCase(sendMessage.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
+      })
+      .addCase(createGroupConversation.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        if (!action.payload?._id) return;
+        const newConvos = [...state.conversations].filter(
+          (c) => c._id !== action.payload._id
+        );
+        newConvos.unshift(action.payload);
+        state.conversations = newConvos;
+        state.activeConversation = action.payload;
+      })
+      .addCase(updateGroupConversation.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        if (!action.payload?._id) return;
+        const newConvos = [...state.conversations].filter(
+          (c) => c._id !== action.payload._id
+        );
+        newConvos.unshift(action.payload);
+        state.conversations = newConvos;
+        if (state.activeConversation?._id === action.payload._id) {
+          state.activeConversation = action.payload;
+        }
+      })
+      .addCase(addMembersToGroupConversation.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        if (!action.payload?._id) return;
+        const newConvos = [...state.conversations].filter(
+          (c) => c._id !== action.payload._id
+        );
+        newConvos.unshift(action.payload);
+        state.conversations = newConvos;
+        if (state.activeConversation?._id === action.payload._id) {
+          state.activeConversation = action.payload;
+        }
+      })
+      .addCase(removeMemberFromGroupConversation.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        const payload = action.payload;
+        if (payload?.deleted) {
+          state.conversations = state.conversations.filter(
+            (c) => c._id !== payload.conversationId
+          );
+          if (state.activeConversation?._id === payload.conversationId) {
+            state.activeConversation = {};
+            state.messages = [];
+          }
+          return;
+        }
+        if (!payload?._id) return;
+        const newConvos = [...state.conversations].filter(
+          (c) => c._id !== payload._id
+        );
+        newConvos.unshift(payload);
+        state.conversations = newConvos;
+        if (state.activeConversation?._id === payload._id) {
+          state.activeConversation = payload;
+        }
+      })
+      .addCase(exitGroupConversation.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        const payload = action.payload;
+        const targetId = payload?.conversationId || payload?._id;
+        if (targetId) {
+          state.conversations = state.conversations.filter(
+            (c) => c._id !== targetId
+          );
+          if (state.activeConversation?._id === targetId) {
+            state.activeConversation = {};
+            state.messages = [];
+          }
+        }
+      })
+      .addCase(setDisappearingMessagesSetting.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        if (!action.payload?._id) return;
+        const newConvos = [...state.conversations].filter(
+          (c) => c._id !== action.payload._id
+        );
+        newConvos.unshift(action.payload);
+        state.conversations = newConvos;
+        if (state.activeConversation?._id === action.payload._id) {
+          state.activeConversation = action.payload;
+        }
+      })
+      .addCase(votePollMessage.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        const updatedMessage = action.payload;
+        if (!updatedMessage?._id) return;
+        state.messages = state.messages.map((msg) =>
+          msg._id === updatedMessage._id ? updatedMessage : msg
+        );
       });
   },
 });
@@ -293,6 +518,7 @@ export const {
   clearUnreadForConversation,
   setFavoriteConversationIds,
   toggleFavoriteConversation,
+  upsertConversationFromServer,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

@@ -7,10 +7,12 @@ import { Attachments } from "./attachments";
 import EmojiPickerApp from "./EmojiPicker";
 import Input from "./Input";
 import SocketContext from "../../../context/SocketContext";
+import PollComposer from "./PollComposer";
 function ChatActions({ socket }) {
   const dispatch = useDispatch();
   const [showPicker, setShowPicker] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
+  const [showPollComposer, setShowPollComposer] = useState(false);
   const [loading, setLoading] = useState(false);
   const { activeConversation, status } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.user);
@@ -46,41 +48,71 @@ function ChatActions({ socket }) {
       setLoading(false);
     }
   };
+
+  const sendPollHandler = async (pollPayload) => {
+    setLoading(true);
+    try {
+      const payload = {
+        ...values,
+        message: "",
+        poll: pollPayload,
+      };
+      let newMsg = await dispatch(sendMessage(payload));
+      if (newMsg?.payload?._id) {
+        socket.emit("send message", newMsg.payload);
+        setShowPollComposer(false);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <form
-      onSubmit={(e) => SendMessageHandler(e)}
-      className="dark:bg-dark_bg_2 h-[60px] w-full flex items-center absolute bottom-0 py-2 px-4 select-none"
-    >
-      {/*Container*/}
-      <div className="w-full flex items-center gap-x-2">
-        {/*Emojis and attachpments*/}
-        <ul className="flex gap-x-2">
-          <EmojiPickerApp
-            textRef={textRef}
-            message={message}
-            setMessage={setMessage}
-            showPicker={showPicker}
-            setShowPicker={setShowPicker}
-            setShowAttachments={setShowAttachments}
-          />
-          <Attachments
-            showAttachments={showAttachments}
-            setShowAttachments={setShowAttachments}
-            setShowPicker={setShowPicker}
-          />
-        </ul>
-        {/*Input*/}
-        <Input message={message} setMessage={setMessage} textRef={textRef} />
-        {/*Send button*/}
-        <button type="submit" className="btn">
-          {status === "loading" && loading ? (
-            <ClipLoader color="#E9EDEF" size={25} />
-          ) : (
-            <SendIcon className="dark:fill-dark_svg_1" />
-          )}
-        </button>
-      </div>
-    </form>
+    <>
+      <form
+        onSubmit={(e) => SendMessageHandler(e)}
+        className="dark:bg-dark_bg_2 h-[60px] w-full flex items-center absolute bottom-0 py-2 px-4 select-none"
+      >
+        {/*Container*/}
+        <div className="w-full flex items-center gap-x-2">
+          {/*Emojis and attachpments*/}
+          <ul className="flex gap-x-2">
+            <EmojiPickerApp
+              textRef={textRef}
+              message={message}
+              setMessage={setMessage}
+              showPicker={showPicker}
+              setShowPicker={setShowPicker}
+              setShowAttachments={setShowAttachments}
+            />
+            <Attachments
+              showAttachments={showAttachments}
+              setShowAttachments={setShowAttachments}
+              setShowPicker={setShowPicker}
+              onCreatePoll={() => setShowPollComposer(true)}
+            />
+          </ul>
+          {/*Input*/}
+          <Input message={message} setMessage={setMessage} textRef={textRef} />
+          {/*Send button*/}
+          <button type="submit" className="btn">
+            {status === "loading" && loading ? (
+              <ClipLoader color="#E9EDEF" size={25} />
+            ) : (
+              <SendIcon className="dark:fill-dark_svg_1" />
+            )}
+          </button>
+        </div>
+      </form>
+
+      {showPollComposer && (
+        <PollComposer
+          loading={loading}
+          onClose={() => setShowPollComposer(false)}
+          onSubmit={sendPollHandler}
+        />
+      )}
+    </>
   );
 }
 

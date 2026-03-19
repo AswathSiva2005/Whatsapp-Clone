@@ -33,7 +33,10 @@ export const getConvoMessages = async (
   blockedUserIds = [],
   currentUserId
 ) => {
-  const query = { conversation: convo_id };
+  const query = {
+    conversation: convo_id,
+    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+  };
   if (blockedUserIds.length > 0) {
     query.sender = { $nin: blockedUserIds };
   }
@@ -124,10 +127,54 @@ export const getStarredMessagesForUser = async (userId) => {
   const messages = await MessageModel.find({
     starredBy: userId,
     deletedFor: { $ne: userId },
+    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
   })
     .populate("sender", "name picture email status")
     .populate("conversation", "name isGroup users")
     .sort({ createdAt: -1 });
 
   return messages;
+};
+
+export const votePollOption = async ({ messageId, optionIndex, userId }) => {
+  const message = await MessageModel.findById(messageId).populate({
+    path: "conversation",
+    select: "users",
+  });
+
+  if (!message) {
+    throw createHttpError.NotFound("Message not found");
+  }
+
+  const isParticipant = message.conversation?.users?.some(
+    (participant) => String(participant) === String(userId)
+  );
+
+  if (!isParticipant) {
+    throw createHttpError.Forbidden("You are not allowed to vote in this poll");
+  }
+
+  if (!message.poll || !Array.isArray(message.poll.options)) {
+    throw createHttpError.BadRequest("This message does not contain a poll");
+  }
+
+  const selectedIndex = Number(optionIndex);
+  if (
+    Number.isNaN(selectedIndex) ||
+    selectedIndex < 0 ||
+    selectedIndex >= message.poll.options.length
+  ) {
+    throw createHttpError.BadRequest("Invalid poll option");
+  }
+
+  message.poll.options = message.poll.options.map((option) => ({
+    ...option.toObject(),
+    votes: (option.votes || []).filter((id) => String(id) !== String(userId)),
+  }));
+
+  message.poll.options[selectedIndex].votes.push(userId);
+  await message.save();
+
+  const populatedMessage = await populateMessage(message._id);
+  return populatedMessage;
 };

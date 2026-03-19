@@ -1,5 +1,11 @@
 import DownloadIcon from "../../../../svg/Download";
 export default function FileOthers({ file, type, me }) {
+  const extensionFromPublicId = file?.public_id?.includes(".")
+    ? file.public_id.split(".").pop()
+    : file?.format || "file";
+  const displayName = file?.original_filename || "file";
+  const fileBytes = Number(file?.bytes || 0);
+
   return (
     <div className="bg-green_4 p-2 rounded-lg">
       {/*Container*/}
@@ -13,10 +19,10 @@ export default function FileOthers({ file, type, me }) {
           />
           <div className="flex flex-col gap-2">
             <h1>
-              {file.original_filename}.{file.public_id.split(".")[1]}
+              {displayName}.{extensionFromPublicId}
             </h1>
             <span className="text-sm">
-              {type} . {file.bytes}B
+              {type} . {fileBytes}B
             </span>
           </div>
         </div>

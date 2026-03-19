@@ -1,5 +1,5 @@
 import { DotsIcon } from "../../../svg";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Menu from "./Menu";
 import { CreateGroup } from "./createGroup";
 import SettingsPanel from "./SettingsPanel";
@@ -10,6 +10,30 @@ export default function SidebarHeader() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showStarredMessages, setShowStarredMessages] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleClickOutside = (event) => {
+      if (!menuRef.current?.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showMenu]);
 
   return (
     <>
@@ -30,14 +54,12 @@ export default function SidebarHeader() {
                 +
               </button>
             </li>
-            <li
-              className="relative"
-              onClick={() => setShowMenu((prev) => !prev)}
-            >
+            <li className="relative" ref={menuRef}>
               <button
                 className={`w-9 h-9 rounded-full flex items-center justify-center ${
                   showMenu ? "bg-dark_hover_1" : "hover:dark:bg-dark_hover_1"
                 }`}
+                onClick={() => setShowMenu((prev) => !prev)}
               >
                 <DotsIcon className="dark:fill-dark_svg_1" />
               </button>

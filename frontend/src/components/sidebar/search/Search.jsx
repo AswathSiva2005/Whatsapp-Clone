@@ -130,6 +130,16 @@ export default function Search({
               Favorites
               {favoritesCount > 0 ? ` ${favoritesCount}` : ""}
             </button>
+            <button
+              className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
+                activeView === "groups"
+                  ? "bg-green_2 text-[#0b141a]"
+                  : "border dark:border-[#2f3b44] dark:text-dark_text_2"
+              }`}
+              onClick={() => setActiveView("groups")}
+            >
+              Groups
+            </button>
             <button className="w-7 h-7 rounded-full border dark:border-[#2f3b44] dark:text-dark_text_2 text-xs">
               ▾
             </button>

@@ -77,7 +77,12 @@ export default function Sidebar({ onlineUsers, typing }) {
           >
             <StoryIcon className="dark:fill-dark_svg_2" />
           </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1">
+          <button
+            className={`w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1 ${
+              activeView === "groups" ? "bg-[#1f2c34]" : ""
+            }`}
+            onClick={() => setActiveView("groups")}
+          >
             <CommunityIcon className="dark:fill-dark_svg_2" />
           </button>
         </div>

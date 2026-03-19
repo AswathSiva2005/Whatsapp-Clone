@@ -4,6 +4,7 @@ import Message from "./Message";
 import Typing from "./Typing";
 import FileMessage from "./files/FileMessage";
 import SocketContext from "../../../context/SocketContext";
+import PollMessage from "./PollMessage";
 
 function ChatMessages({ typing, searchResults = [], socket }) {
   const { messages, activeConversation } = useSelector((state) => state.chat);
@@ -70,6 +71,13 @@ function ChatMessages({ typing, searchResults = [], socket }) {
                   key={`${message._id}-text`}
                   me={user._id === message.sender._id}
                   highlights={highlightsMap[message._id] || []}
+                />
+              ) : null}
+              {/*Poll message*/}
+              {message.poll?.question ? (
+                <PollMessage
+                  message={message}
+                  me={user._id === message.sender._id}
                 />
               ) : null}
             </div>

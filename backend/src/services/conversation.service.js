@@ -85,3 +85,16 @@ export const updateLatestMessage = async (convo_id, msg) => {
 
   return updatedConvo;
 };
+
+export const getConversationByIdForUser = async (conversationId) => {
+  const conversation = await ConversationModel.findById(conversationId)
+    .populate("users", "-password")
+    .populate("admin", "-password")
+    .populate("latestMessage");
+
+  if (!conversation) {
+    throw createHttpError.NotFound("Conversation not found.");
+  }
+
+  return conversation;
+};

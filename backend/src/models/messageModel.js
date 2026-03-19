@@ -17,6 +17,35 @@ const messageSchema = mongoose.Schema(
       ref: "ConversationModel",
     },
     files: [],
+    poll: {
+      question: {
+        type: String,
+        trim: true,
+      },
+      options: [
+        {
+          label: {
+            type: String,
+            trim: true,
+          },
+          votes: [
+            {
+              type: ObjectId,
+              ref: "UserModel",
+            },
+          ],
+        },
+      ],
+      allowMultipleAnswers: {
+        type: Boolean,
+        default: false,
+      },
+    },
+    expiresAt: {
+      type: Date,
+      default: null,
+      index: { expireAfterSeconds: 0 },
+    },
     status: {
       type: String,
       enum: ["sent", "delivered", "read"],

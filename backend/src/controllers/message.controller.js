@@ -6,23 +6,93 @@ import {
   getConvoMessages,
   getStarredMessagesForUser,
   populateMessage,
+  votePollOption,
   toggleMessageStarForUser,
 } from "../services/message.service.js";
-import { UserModel } from "../models/index.js";
+import { ConversationModel, UserModel } from "../models/index.js";
 
 export const sendMessage = async (req, res, next) => {
   try {
     const user_id = req.user.userId;
-    const { message, convo_id, files } = req.body;
+    const { message, convo_id, files, poll } = req.body;
     const normalizedMessage = typeof message === "string" ? message.trim() : "";
     const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
+    const hasPoll =
+      poll &&
+      typeof poll.question === "string" &&
+      poll.question.trim() &&
+      Array.isArray(poll.options) &&
+      poll.options.length >= 2;
 
-    if (!convo_id || (!normalizedMessage && !hasFiles)) {
+    if (!convo_id || (!normalizedMessage && !hasFiles && !hasPoll)) {
       logger.error("Please provide a conversation id and a non-empty message or files.");
       return res.status(400).json({
         error: {
           status: 400,
-          message: "convo_id and a non-empty message or files are required.",
+          message: "convo_id and a non-empty message or files or poll are required.",
+        },
+      });
+    }
+
+    const conversation = await ConversationModel.findById(convo_id).select(
+      "users disappearingSettings"
+    );
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: {
+          status: 404,
+          message: "Conversation not found.",
+        },
+      });
+    }
+
+    const isParticipant = conversation.users.some(
+      (participantId) => String(participantId) === String(user_id)
+    );
+
+    if (!isParticipant) {
+      return res.status(403).json({
+        error: {
+          status: 403,
+          message: "You are not part of this conversation.",
+        },
+      });
+    }
+
+    const userDisappearSetting = (conversation.disappearingSettings || []).find(
+      (entry) => String(entry.user) === String(user_id)
+    );
+
+    const shouldExpire =
+      userDisappearSetting?.mode === "timed" && userDisappearSetting?.seconds > 0;
+
+    const expiresAt = shouldExpire
+      ? new Date(Date.now() + Number(userDisappearSetting.seconds) * 1000)
+      : null;
+
+    const normalizedPoll = hasPoll
+      ? {
+          question: poll.question.trim(),
+          options: poll.options
+            .map((option) =>
+              typeof option === "string"
+                ? { label: option.trim(), votes: [] }
+                : {
+                    label: String(option.label || "").trim(),
+                    votes: Array.isArray(option.votes) ? option.votes : [],
+                  }
+            )
+            .filter((option) => option.label),
+          allowMultipleAnswers: Boolean(poll.allowMultipleAnswers),
+        }
+      : undefined;
+
+    if (normalizedPoll && normalizedPoll.options.length < 2) {
+      return res.status(400).json({
+        error: {
+          status: 400,
+          message: "A poll requires at least 2 valid options.",
         },
       });
     }
@@ -32,6 +102,8 @@ export const sendMessage = async (req, res, next) => {
       message: normalizedMessage,
       conversation: convo_id,
       files: files || [],
+      poll: normalizedPoll,
+      expiresAt,
     };
     let newMessage = await createMessage(msgData);
     let populatedMessage = await populateMessage(newMessage._id);
@@ -92,6 +164,24 @@ export const getStarredMessages = async (req, res, next) => {
     const userId = req.user.userId;
     const messages = await getStarredMessagesForUser(userId);
     res.status(200).json(messages);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const votePoll = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const { optionIndex } = req.body;
+    const userId = req.user.userId;
+
+    const updatedMessage = await votePollOption({
+      messageId,
+      optionIndex,
+      userId,
+    });
+
+    res.status(200).json(updatedMessage);
   } catch (error) {
     next(error);
   }

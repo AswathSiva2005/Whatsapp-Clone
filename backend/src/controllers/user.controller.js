@@ -136,6 +136,11 @@ export const uploadProfilePicture = async (req, res, next) => {
       res.status(200).json({
         message: "Picture uploaded successfully.",
         url: fileUrl,
+        secure_url: fileUrl,
+        public_id: fileName,
+        original_filename: path.basename(file.name || fileName, path.extname(fileName)),
+        bytes: file.size,
+        format: extension.replace(".", ""),
       });
     };
 
@@ -164,6 +169,11 @@ export const uploadProfilePicture = async (req, res, next) => {
       res.status(200).json({
         message: "Picture uploaded successfully.",
         url: response.data.secure_url,
+        secure_url: response.data.secure_url,
+        public_id: response.data.public_id,
+        original_filename: response.data.original_filename,
+        bytes: response.data.bytes,
+        format: response.data.format,
       });
     } catch (cloudinaryError) {
       logger.error("Cloudinary upload error:", cloudinaryError.response?.data || cloudinaryError.message);

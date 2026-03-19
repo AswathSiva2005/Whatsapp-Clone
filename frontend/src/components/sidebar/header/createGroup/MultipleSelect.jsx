@@ -5,14 +5,21 @@ export default function MultipleSelect({
   selectedUsers,
   setSelectedUsers,
   searchResults,
-  handleSearch,
+  searchValue,
+  setSearchValue,
 }) {
   return (
     <div className="mt-4">
       <Select
         options={searchResults}
         onChange={setSelectedUsers}
-        onKeyDown={(e) => handleSearch(e)}
+        inputValue={searchValue}
+        onInputChange={(value, { action }) => {
+          if (action === "input-change") {
+            setSearchValue(value);
+          }
+        }}
+        onMenuClose={() => setSearchValue("")}
         placeholder="Search, select users"
         isMulti
         formatOptionLabel={(user) => (

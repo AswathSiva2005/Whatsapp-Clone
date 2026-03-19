@@ -7,11 +7,13 @@ import {
 	toggleStarMessage,
 	deleteSingleMessage,
 	getStarredMessages,
+	votePoll,
 } from "../controllers/message.controller.js";
 const router = express.Router();
 
 router.route("/").post(trimRequest.all, authMiddleware, sendMessage);
 router.route("/starred").get(trimRequest.all, authMiddleware, getStarredMessages);
+router.route("/:messageId/poll/vote").patch(trimRequest.all, authMiddleware, votePoll);
 router.route("/:messageId/star").patch(trimRequest.all, authMiddleware, toggleStarMessage);
 router.route("/:messageId").delete(trimRequest.all, authMiddleware, deleteSingleMessage);
 router.route("/:convo_id").get(trimRequest.all, authMiddleware, getMessages);

@@ -1,18 +1,24 @@
 import {
   CameraIcon,
   ContactIcon,
-  DocumentIcon,
   PollIcon,
   StickerIcon,
 } from "../../../../../svg";
 import DocumentAttachment from "./DocumentAttachment";
 import PhotoAttachment from "./PhotoAttachment";
 
-export default function Menu() {
+export default function Menu({ onCreatePoll, setShowAttachments }) {
   return (
     <ul className="absolute bottom-14 openEmojiAnimation">
       <li>
-        <button type="button" className="rounded-full">
+        <button
+          type="button"
+          className="rounded-full"
+          onClick={() => {
+            setShowAttachments(false);
+            onCreatePoll?.();
+          }}
+        >
           <PollIcon />
         </button>
       </li>
