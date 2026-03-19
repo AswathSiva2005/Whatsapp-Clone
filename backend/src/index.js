@@ -10,7 +10,7 @@ dotenv.config();
 dns.setDefaultResultOrder("ipv4first");
 
 //env variables
-const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGO_URI;
+const DATABASE_URL = process.env.MONGO_URI || process.env.DATABASE_URL;
 const PORT = process.env.PORT || 8000;
 const normalizeOrigin = (value = "") => value.replace(/\/$/, "");
 
@@ -43,7 +43,9 @@ if (process.env.NODE_ENV !== "production") {
 
 //mongodb connection
 mongoose.connect(DATABASE_URL).then(() => {
-  logger.info("Connected to Mongodb.");
+  const dbName = mongoose.connection?.name;
+  const dbHost = mongoose.connection?.host;
+  logger.info(`Connected to Mongodb. db=${dbName} host=${dbHost}`);
 });
 let server;
 
