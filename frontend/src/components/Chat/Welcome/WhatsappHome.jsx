@@ -1,23 +1,20 @@
-import { Logo } from "../../../svg";
-
 export default function WhatsappHome() {
   return (
-    <div className="h-full w-full dark:bg-dark_bg_4 select-none border-l dark:border-l-dark_border_2 border-b-[6px] border-b-green_2">
-      {/*Container*/}
-      <div className="-mt-1.5 w-full h-full flex flex-col gap-y-8 items-center justify-center">
-        <span>
-          <Logo />
-        </span>
-        {/*Infos*/}
-        <div className="mt-1 text-center space-y-[12px]">
-          <h1 className="text-[32px] dark:text-dark_text_4 font-extralight">
-            Whatsapp Web
-          </h1>
-          <p className="text-sm dark:text-dark_text_3">
-            Send and receive messages without keeping your phone online.
-            <br />
-            Use Whatsapp on up to 4 linked devices and 1 phone at the same time.
-          </p>
+    <div className="h-full w-full dark:bg-[#111b21] select-none border-l dark:border-l-[#1f2a30]">
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="flex items-center gap-8">
+          <div className="w-[108px] h-[108px] rounded-2xl bg-[#2a3138] flex flex-col items-center justify-center gap-3">
+            <span className="text-2xl text-dark_svg_1">📄</span>
+            <span className="text-sm dark:text-dark_text_2">Send document</span>
+          </div>
+          <div className="w-[108px] h-[108px] rounded-2xl bg-[#2a3138] flex flex-col items-center justify-center gap-3">
+            <span className="text-2xl text-dark_svg_1">👥</span>
+            <span className="text-sm dark:text-dark_text_2">Add contact</span>
+          </div>
+          <div className="w-[108px] h-[108px] rounded-2xl bg-[#2a3138] flex flex-col items-center justify-center gap-3">
+            <span className="w-7 h-7 rounded-full border-4 border-blue-500 border-r-transparent animate-spin"></span>
+            <span className="text-sm dark:text-dark_text_2">Ask Meta AI</span>
+          </div>
         </div>
       </div>
     </div>

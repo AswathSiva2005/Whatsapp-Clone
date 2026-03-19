@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import moment from "moment";
@@ -6,7 +6,11 @@ import { CloseIcon } from "../../../svg";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 import StatusViewer from "./StatusViewer";
 
-export default function StatusPanel({ setShowStatusPanel }) {
+export default function StatusPanel({
+  setShowStatusPanel,
+  embedded = false,
+  onCloseEmbedded,
+}) {
   const { user } = useSelector((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [statusFeed, setStatusFeed] = useState({ mine: [], feed: [] });
@@ -20,7 +24,7 @@ export default function StatusPanel({ setShowStatusPanel }) {
     initialIndex: 0,
   });
 
-  const fetchStatuses = async () => {
+  const fetchStatuses = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await axios.get(`${process.env.REACT_APP_API_ENDPOINT}/status`, {
@@ -34,11 +38,11 @@ export default function StatusPanel({ setShowStatusPanel }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.token]);
 
   useEffect(() => {
     fetchStatuses();
-  }, []);
+  }, [fetchStatuses]);
 
   const canSubmit = useMemo(() => {
     return Boolean(text.trim() || imageFile);
@@ -173,10 +177,25 @@ export default function StatusPanel({ setShowStatusPanel }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[80] bg-dark_bg_2 p-4 overflow-y-auto scrollbar">
+      <div
+        className={`${
+          embedded
+            ? "h-[calc(100vh-58px)] overflow-y-auto scrollbar p-4"
+            : "fixed inset-0 z-[80] bg-dark_bg_2 p-4 overflow-y-auto scrollbar"
+        }`}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl dark:text-dark_text_1 font-semibold">Status</h2>
-          <button className="btn" onClick={() => setShowStatusPanel(false)}>
+          <button
+            className="btn"
+            onClick={() => {
+              if (embedded) {
+                onCloseEmbedded?.();
+              } else {
+                setShowStatusPanel(false);
+              }
+            }}
+          >
             <CloseIcon className="fill-dark_svg_1" />
           </button>
         </div>

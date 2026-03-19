@@ -3,7 +3,14 @@ import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { FilterIcon, ReturnIcon, SearchIcon, CloseIcon } from "../../../svg";
 
-export default function Search({ searchLength, setSearchResults }) {
+export default function Search({
+  searchLength,
+  setSearchResults,
+  activeView,
+  setActiveView,
+  unreadChatsCount,
+  favoritesCount,
+}) {
   const { user } = useSelector((state) => state.user);
   const { token } = user;
   const [show, setShow] = useState(false);
@@ -54,12 +61,12 @@ export default function Search({ searchLength, setSearchResults }) {
 
   return (
     <>
-      <div className="h-[49px] py-1.5">
+      <div className="pt-1 pb-2 border-b dark:border-b-[#1f2a30]">
         {/*Container*/}
-        <div className="px-[10px]">
+        <div className="px-4">
           {/*Search input container*/}
-          <div className="flex items-center gap-x-2">
-            <div className="w-full flex dark:bg-dark_bg_2 rounded-lg pl-2">
+          <div className="flex items-center gap-x-2 mb-3">
+            <div className="w-full flex dark:bg-[#202c33] rounded-full pl-2.5 h-9">
               {show || searchLength > 0 ? (
                 <span
                   className="w-8 flex items-center justify-center rotateAnimation cursor-pointer"
@@ -77,17 +84,54 @@ export default function Search({ searchLength, setSearchResults }) {
                 placeholder="Search or start a new chat"
                 value={searchQuery}
                 onChange={handleInputChange}
-                className="input"
+                className="w-full bg-transparent text-sm dark:text-dark_text_1 outline-none"
                 onFocus={() => setShow(true)}
                 onBlur={() => searchLength === 0 && setShow(false)}
               />
             </div>
             <button
-              className="btn"
+              className="w-8 h-8 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1"
               onClick={() => setShowAdvanced(true)}
               title="Advanced search"
             >
               <FilterIcon className="dark:fill-dark_svg_2" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar">
+            <button
+              className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
+                activeView === "all"
+                  ? "bg-green_2 text-[#0b141a]"
+                  : "border dark:border-[#2f3b44] dark:text-dark_text_2"
+              }`}
+              onClick={() => setActiveView("all")}
+            >
+              All
+            </button>
+            <button
+              className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
+                activeView === "unread"
+                  ? "bg-green_2 text-[#0b141a]"
+                  : "border dark:border-[#2f3b44] dark:text-dark_text_2"
+              }`}
+              onClick={() => setActiveView("unread")}
+            >
+              {`Unread ${unreadChatsCount}`}
+            </button>
+            <button
+              className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
+                activeView === "favorites"
+                  ? "bg-green_2 text-[#0b141a]"
+                  : "border dark:border-[#2f3b44] dark:text-dark_text_2"
+              }`}
+              onClick={() => setActiveView("favorites")}
+            >
+              Favorites
+              {favoritesCount > 0 ? ` ${favoritesCount}` : ""}
+            </button>
+            <button className="w-7 h-7 rounded-full border dark:border-[#2f3b44] dark:text-dark_text_2 text-xs">
+              ▾
             </button>
           </div>
         </div>

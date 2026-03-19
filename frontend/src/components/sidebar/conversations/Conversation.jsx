@@ -1,6 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
 import SocketContext from "../../../context/SocketContext";
-import { open_create_conversation } from "../../../features/chatSlice";
+import {
+  clearUnreadForConversation,
+  open_create_conversation,
+} from "../../../features/chatSlice";
 import {
   getConversationId,
   getConversationName,
@@ -10,7 +13,7 @@ import { dateHandler } from "../../../utils/date";
 import { capitalize } from "../../../utils/string";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 
-function Conversation({ convo, socket, online, typing }) {
+function Conversation({ convo, socket, online, typing, unreadCount = 0 }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { activeConversation } = useSelector((state) => state.chat);
@@ -23,14 +26,15 @@ function Conversation({ convo, socket, online, typing }) {
   const openConversation = async () => {
     let newConvo = await dispatch(open_create_conversation(values));
     socket.emit("join conversation", newConvo.payload._id);
+    dispatch(clearUnreadForConversation(convo._id));
   };
   return (
     <li
       onClick={() => openConversation()}
-      className={`list-none h-[72px] w-full dark:bg-dark_bg_1 hover:${
-        convo._id !== activeConversation._id ? "dark:bg-dark_bg_2" : ""
-      } cursor-pointer dark:text-dark_text_1 px-[10px] ${
-        convo._id === activeConversation._id ? "dark:bg-dark_hover_1" : ""
+      className={`list-none h-[72px] w-full hover:${
+        convo._id !== activeConversation._id ? "dark:bg-[#202c33]" : ""
+      } cursor-pointer dark:text-dark_text_1 px-3 ${
+        convo._id === activeConversation._id ? "dark:bg-[#202c33]" : ""
       }`}
     >
       {/*Container */}
@@ -74,7 +78,7 @@ function Conversation({ convo, socket, online, typing }) {
                   {typing === convo._id ? (
                     <p className="text-green_1">Typing...</p>
                   ) : (
-                    <p>
+                    <p className="text-sm">
                       {convo.latestMessage?.message.length > 25
                         ? `${convo.latestMessage?.message.substring(0, 25)}...`
                         : convo.latestMessage?.message}
@@ -86,16 +90,25 @@ function Conversation({ convo, socket, online, typing }) {
           </div>
         </div>
         {/*Right*/}
-        <div className="flex flex-col gap-y-4 items-end text-xs">
-          <span className="dark:text-dark_text_2">
+        <div className="flex flex-col items-end justify-between text-xs min-w-[64px] h-[44px] py-0.5">
+          <span className="dark:text-dark_text_2 text-[12px]">
             {convo.latestMessage?.createdAt
               ? dateHandler(convo.latestMessage?.createdAt)
               : ""}
           </span>
+          <span
+            className={`min-w-[18px] h-[18px] rounded-full text-[11px] leading-[18px] text-center font-semibold ${
+              unreadCount > 0
+                ? "bg-green_1 text-white px-1"
+                : "bg-transparent text-transparent px-0"
+            }`}
+          >
+            {unreadCount > 99 ? "99+" : unreadCount || "0"}
+          </span>
         </div>
       </div>
       {/*Border*/}
-      <div className="ml-16 border-b dark:border-b-dark_border_1"></div>
+      <div className="ml-16 border-b dark:border-b-[#1f2a30]"></div>
     </li>
   );
 }

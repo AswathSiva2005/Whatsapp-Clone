@@ -1,61 +1,44 @@
-import { useSelector } from "react-redux";
-import { ChatIcon, CommunityIcon, DotsIcon, StoryIcon } from "../../../svg";
+import { DotsIcon } from "../../../svg";
 import { useState } from "react";
 import Menu from "./Menu";
 import { CreateGroup } from "./createGroup";
 import SettingsPanel from "./SettingsPanel";
 import StarredMessagesPanel from "./StarredMessagesPanel";
-import StatusPanel from "./StatusPanel";
-import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 
 export default function SidebarHeader() {
-  const { user } = useSelector((state) => state.user);
   const [showMenu, setShowMenu] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showStarredMessages, setShowStarredMessages] = useState(false);
-  const [showStatusPanel, setShowStatusPanel] = useState(false);
 
   return (
     <>
       {/*Sidebar header*/}
-      <div className="h-[50px] dark:bg-dark_bg_2 flex items-center p16">
+      <div className="h-[58px] dark:bg-[#111b21] flex items-center px-4">
         {/* container */}
         <div className="w-full flex items-center justify-between">
-          {/*user image*/}
-          <button className="btn">
-            <img
-              src={user.picture || getTwoLetterAvatarUrl(user.name)}
-              alt={user.name}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = getTwoLetterAvatarUrl(user.name);
-              }}
-              className="w-full h-full rounded-full object-cover"
-            />
-          </button>
-          {/*user icons*/}
-          <ul className="flex items-center gap-x-2 5">
+          <h2 className="text-[30px] leading-none font-medium tracking-tight dark:text-dark_text_1">
+            Chats
+          </h2>
+          <ul className="flex items-center gap-x-1">
             <li>
-              <button className="btn">
-                <CommunityIcon className="dark:fill-dark_svg_1" />
-              </button>
-            </li>
-            <li>
-              <button className="btn" onClick={() => setShowStatusPanel(true)}>
-                <StoryIcon className="dark:fill-dark_svg_1" />
-              </button>
-            </li>
-            <li>
-              <button className="btn">
-                <ChatIcon className="dark:fill-dark_svg_1" />
+              <button
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1 text-dark_svg_1 text-xl"
+                title="New chat"
+                onClick={() => setShowCreateGroup(true)}
+              >
+                +
               </button>
             </li>
             <li
               className="relative"
               onClick={() => setShowMenu((prev) => !prev)}
             >
-              <button className={`btn ${showMenu ? "bg-dark_hover_1" : ""}`}>
+              <button
+                className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                  showMenu ? "bg-dark_hover_1" : "hover:dark:bg-dark_hover_1"
+                }`}
+              >
                 <DotsIcon className="dark:fill-dark_svg_1" />
               </button>
               {showMenu ? (
@@ -78,7 +61,6 @@ export default function SidebarHeader() {
       {showStarredMessages && (
         <StarredMessagesPanel setShowStarredMessages={setShowStarredMessages} />
       )}
-      {showStatusPanel && <StatusPanel setShowStatusPanel={setShowStatusPanel} />}
     </>
   );
 }

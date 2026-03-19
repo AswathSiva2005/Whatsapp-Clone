@@ -178,11 +178,10 @@ function Home({ socket }) {
   }, []);
   return (
     <>
-      <div className="h-screen dark:bg-dark_bg_1 flex items-center justify-center overflow-hidden">
-        {/*container*/}
-        <div className="container h-screen flex py-[19px] flex-col lg:flex-row gap-0">
+      <div className="h-screen dark:bg-[#0b141a] flex overflow-hidden">
+        <div className="w-full h-screen flex flex-col lg:flex-row gap-0">
           {/*Sidebar*/}
-          <div className="hidden md:block md:max-w-[30%] w-full md:w-auto">
+          <div className="hidden md:block w-full md:max-w-[420px]">
             <Sidebar onlineUsers={onlineUsers} typing={typing} />
           </div>
           {activeConversation._id ? (

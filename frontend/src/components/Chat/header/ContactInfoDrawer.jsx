@@ -8,13 +8,17 @@ import {
   getConversationName,
   getConversationPicture,
 } from "../../../utils/chat";
-import { setActiveConversation } from "../../../features/chatSlice";
+import {
+  setActiveConversation,
+  toggleFavoriteConversation,
+} from "../../../features/chatSlice";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 
 export default function ContactInfoDrawer({ activeConversation, onClose }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { token } = user;
+  const { favoriteConversationIds } = useSelector((state) => state.chat);
   const [busy, setBusy] = useState(false);
 
   if (!activeConversation?._id) return null;
@@ -38,6 +42,11 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
 
   // Check if user is blocked
   const isUserBlocked = !isGroup && user.blockedUsers?.includes(targetId);
+  const isFavorite = favoriteConversationIds.includes(activeConversation._id);
+
+  const toggleFavorite = () => {
+    dispatch(toggleFavoriteConversation(activeConversation._id));
+  };
 
   const blockUser = async () => {
     if (!targetId || busy) return;
@@ -159,8 +168,9 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
           <button
             className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"
             disabled={busy}
+            onClick={toggleFavorite}
           >
-            Add to favourites
+            {isFavorite ? "Remove from favourites" : "Add to favourites"}
           </button>
           <button
             className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"

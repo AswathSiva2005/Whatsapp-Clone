@@ -12,6 +12,8 @@ const initialState = {
   messages: [],
   notifications: [],
   files: [],
+  unreadByConversation: {},
+  favoriteConversationIds: [],
 };
 
 //functions
@@ -116,12 +118,19 @@ export const chatSlice = createSlice({
   reducers: {
     setActiveConversation: (state, action) => {
       state.activeConversation = action.payload;
+      if (action.payload?._id) {
+        state.unreadByConversation[action.payload._id] = 0;
+      }
     },
     updateMessagesAndConversations: (state, action) => {
       //update messages
       let convo = state.activeConversation;
       if (convo._id === action.payload.conversation._id) {
         state.messages = [...state.messages, action.payload];
+      } else {
+        const convoId = action.payload.conversation._id;
+        state.unreadByConversation[convoId] =
+          (state.unreadByConversation[convoId] || 0) + 1;
       }
       //update conversations
       let conversation = {
@@ -133,6 +142,28 @@ export const chatSlice = createSlice({
       );
       newConvos.unshift(conversation);
       state.conversations = newConvos;
+    },
+    setUnreadCountForConversation: (state, action) => {
+      const { conversationId, count } = action.payload;
+      state.unreadByConversation[conversationId] = count;
+    },
+    clearUnreadForConversation: (state, action) => {
+      const conversationId = action.payload;
+      state.unreadByConversation[conversationId] = 0;
+    },
+    setFavoriteConversationIds: (state, action) => {
+      state.favoriteConversationIds = action.payload || [];
+    },
+    toggleFavoriteConversation: (state, action) => {
+      const conversationId = action.payload;
+      const exists = state.favoriteConversationIds.includes(conversationId);
+      if (exists) {
+        state.favoriteConversationIds = state.favoriteConversationIds.filter(
+          (id) => id !== conversationId
+        );
+      } else {
+        state.favoriteConversationIds.push(conversationId);
+      }
     },
     addFiles: (state, action) => {
       state.files = [...state.files, action.payload];
@@ -187,6 +218,14 @@ export const chatSlice = createSlice({
       .addCase(getConversations.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.conversations = action.payload;
+
+        const updatedUnread = { ...state.unreadByConversation };
+        action.payload.forEach((conversation) => {
+          if (!(conversation._id in updatedUnread)) {
+            updatedUnread[conversation._id] = 0;
+          }
+        });
+        state.unreadByConversation = updatedUnread;
       })
       .addCase(getConversations.rejected, (state, action) => {
         state.status = "failed";
@@ -199,6 +238,9 @@ export const chatSlice = createSlice({
         state.status = "succeeded";
         state.activeConversation = action.payload;
         state.files = [];
+        if (action.payload?._id) {
+          state.unreadByConversation[action.payload._id] = 0;
+        }
       })
       .addCase(open_create_conversation.rejected, (state, action) => {
         state.status = "failed";
@@ -247,6 +289,10 @@ export const {
   updateMessageStatus,
   toggleMessageStarred,
   removeMessageById,
+  setUnreadCountForConversation,
+  clearUnreadForConversation,
+  setFavoriteConversationIds,
+  toggleFavoriteConversation,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
