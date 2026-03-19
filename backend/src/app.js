@@ -49,10 +49,10 @@ app.use(
 );
 
 //parse json request url
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "25mb" }));
 
 //parse json request body
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 //sanitize request data
 app.use(mongoSanitize());
@@ -67,6 +67,7 @@ app.use(compression());
 app.use(
   fileUpload({
     useTempFiles: false,
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB limit
   })
 );
 

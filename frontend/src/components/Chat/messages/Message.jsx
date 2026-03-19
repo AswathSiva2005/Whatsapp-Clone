@@ -75,6 +75,36 @@ export default function Message({ message, me, highlights = [] }) {
     }
   };
 
+  const deleteMessageForEveryone = async () => {
+    if (!window.confirm("Delete this message for everyone? They will see 'This message was deleted'")) {
+      setShowActions(false);
+      return;
+    }
+
+    try {
+      const { data } = await axios.patch(
+        `${process.env.REACT_APP_API_ENDPOINT}/message/${message._id}/delete-for-everyone`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+      // Update the message in Redux with the deleted version
+      dispatch(
+        toggleMessageStarred({
+          messageId: message._id,
+          starred: false,
+        })
+      );
+    } catch (error) {
+      alert("Failed to delete message for everyone. Only the sender can delete for everyone.");
+    } finally {
+      setShowActions(false);
+    }
+  };
+
   // Function to render text with highlights
   const renderHighlightedText = () => {
     if (!highlights || highlights.length === 0) {
@@ -154,7 +184,11 @@ export default function Message({ message, me, highlights = [] }) {
         >
           {/*Message*/}
           <p className="float-left h-full text-sm pb-4 pr-8 break-words">
-            {renderHighlightedText()}
+            {message.isDeletedForEveryone ? (
+              <span className="italic text-dark_text_5">This message was deleted</span>
+            ) : (
+              renderHighlightedText()
+            )}
           </p>
           {isStarred && (
             <span className="absolute right-12 bottom-1.5 text-xs text-yellow-300">
@@ -185,7 +219,7 @@ export default function Message({ message, me, highlights = [] }) {
           ) : null}
 
           {showActions && (
-            <div className="absolute right-0 -top-20 dark:bg-dark_bg_2 border dark:border-dark_border_2 rounded-md shadow-md z-40 min-w-[170px]">
+            <div className="absolute right-0 -top-28 dark:bg-dark_bg_2 border dark:border-dark_border_2 rounded-md shadow-md z-40 min-w-[170px]">
               <button
                 type="button"
                 className="w-full text-left px-3 py-2 text-sm hover:dark:bg-dark_bg_3"
@@ -193,6 +227,15 @@ export default function Message({ message, me, highlights = [] }) {
               >
                 {isStarred ? "Unstar message" : "Star message"}
               </button>
+              {me && !message.isDeletedForEveryone && (
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm text-orange-400 hover:dark:bg-dark_bg_3"
+                  onClick={deleteMessageForEveryone}
+                >
+                  Delete for everyone
+                </button>
+              )}
               <button
                 type="button"
                 className="w-full text-left px-3 py-2 text-sm text-[#f15c6d] hover:dark:bg-dark_bg_3"

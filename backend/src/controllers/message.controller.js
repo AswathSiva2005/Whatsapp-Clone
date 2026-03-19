@@ -3,6 +3,7 @@ import { updateLatestMessage } from "../services/conversation.service.js";
 import {
   createMessage,
   deleteMessageForUser,
+  deleteMessageForEveryone,
   getConvoMessages,
   getStarredMessagesForUser,
   populateMessage,
@@ -153,6 +154,18 @@ export const deleteSingleMessage = async (req, res, next) => {
     const userId = req.user.userId;
 
     const result = await deleteMessageForUser(messageId, userId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteMessageForEveryoneHandler = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await deleteMessageForEveryone(messageId, userId);
     res.status(200).json(result);
   } catch (error) {
     next(error);

@@ -63,6 +63,10 @@ const messageSchema = mongoose.Schema(
         ref: "UserModel",
       },
     ],
+    isDeletedForEveryone: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     collection: "messages",

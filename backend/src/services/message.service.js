@@ -123,6 +123,40 @@ export const deleteMessageForUser = async (messageId, userId) => {
   return { messageId };
 };
 
+export const deleteMessageForEveryone = async (messageId, userId) => {
+  const message = await MessageModel.findById(messageId).populate({
+    path: "conversation",
+    select: "users",
+  });
+
+  if (!message) throw createHttpError.NotFound("Message not found");
+
+  // Only sender can delete for everyone
+  if (String(message.sender) !== String(userId)) {
+    throw createHttpError.Forbidden("Only sender can delete message for everyone");
+  }
+
+  // Mark message as deleted for everyone
+  const updatedMessage = await MessageModel.findByIdAndUpdate(
+    messageId,
+    {
+      isDeletedForEveryone: true,
+      message: "",
+      files: [],
+      poll: null,
+    },
+    { new: true }
+  ).populate({
+    path: "sender",
+    select: "_id name picture",
+  }).populate({
+    path: "conversation",
+    select: "_id isGroup",
+  });
+
+  return updatedMessage;
+};
+
 export const getStarredMessagesForUser = async (userId) => {
   const messages = await MessageModel.find({
     starredBy: userId,
