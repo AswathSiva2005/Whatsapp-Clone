@@ -76,6 +76,15 @@ app.use(
 //serve local upload fallback files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
+//basic health route for Render root URL
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "WhatsApp backend is running",
+    apiBase: "/api/v1",
+  });
+});
+
 //api v1 routes
 app.use("/api/v1", routes);
 
