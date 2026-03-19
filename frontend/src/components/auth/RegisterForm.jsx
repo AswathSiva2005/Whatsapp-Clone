@@ -9,10 +9,7 @@ import { changeStatus, registerUser } from "../../features/userSlice";
 import { useState } from "react";
 import Picture from "./Picture";
 import axios from "axios";
-const cloud_name =
-  process.env.REACT_APP_CLOUD_NAME || process.env.REACT_APP_CLOUD_NAME2;
-const cloud_secret =
-  process.env.REACT_APP_CLOUD_SECRET || process.env.REACT_APP_CLOUD_SECRET2;
+import { uploadFiles } from "../../utils/upload";
 export default function RegisterForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -49,20 +46,40 @@ export default function RegisterForm() {
     }
   };
   const uploadImage = async () => {
-    if (!cloud_name || !cloud_secret) {
-      throw new Error("Missing Cloudinary configuration");
+    const cloud_name =
+      process.env.REACT_APP_CLOUD_NAME2 || process.env.REACT_APP_CLOUD_NAME;
+    const cloud_secret =
+      process.env.REACT_APP_CLOUD_SECRET2 || process.env.REACT_APP_CLOUD_SECRET;
+
+    // Validate Cloudinary config
+    const invalidNames = ["name-cloudinary", "put-same-name-here"];
+    const invalidSecrets = ["secrets-cloudinary", "put-same-secret-here"];
+    const hasValidConfig =
+      cloud_name &&
+      cloud_secret &&
+      !invalidNames.includes(cloud_name) &&
+      !invalidSecrets.includes(cloud_secret);
+
+    if (!hasValidConfig) {
+      console.warn("Cloudinary not configured. Skipping picture upload.");
+      return null; // Picture is optional
     }
 
-    let formData = new FormData();
-    formData.append("upload_preset", cloud_secret);
-    formData.append("file", picture);
+    try {
+      let formData = new FormData();
+      formData.append("upload_preset", cloud_secret);
+      formData.append("file", picture);
 
-    const { data } = await axios.post(
-      `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
-      formData
-    );
+      const { data } = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
+        formData
+      );
 
-    return data;
+      return data;
+    } catch (err) {
+      console.error("Cloudinary upload failed:", err.message);
+      return null; // Picture is optional, continue without it
+    }
   };
   return (
     <div className="w-full flex items-center justify-center">

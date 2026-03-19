@@ -1,5 +1,5 @@
-import { useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,7 +7,9 @@ import {
   Navigate,
 } from "react-router-dom";
 import { io } from "socket.io-client";
+import axios from "axios";
 import SocketContext from "./context/SocketContext";
+import { logout } from "./features/userSlice";
 //Pages
 import Home from "./pages/home";
 import Login from "./pages/login";
@@ -25,9 +27,40 @@ const socket = io(API_ENDPOINT.split("/api/v1")[0], {
 });
 
 function App() {
-  //const [connected, setConnected] = useState(false);
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { token } = user;
+  const [tokenVerified, setTokenVerified] = useState(false);
+
+  // Verify token on app startup
+  useEffect(() => {
+    const verifyToken = async () => {
+      if (!token) {
+        setTokenVerified(true);
+        return;
+      }
+
+      try {
+        // Try to fetch user data or conversations to verify token validity
+        await axios.get(`${API_ENDPOINT}/conversation`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 5000,
+        });
+        setTokenVerified(true);
+      } catch (err) {
+        // Token is invalid or expired, clear it
+        if (err.response?.status === 401 || err.code === "ECONNABORTED") {
+          console.warn("Token expired or invalid. Logging out.");
+          dispatch(logout());
+        }
+        setTokenVerified(true);
+      }
+    };
+
+    verifyToken();
+  }, []);
 
   useEffect(() => {
     if (token && !socket.connected) {
@@ -38,6 +71,16 @@ function App() {
       socket.disconnect();
     }
   }, [token]);
+
+  if (!tokenVerified) {
+    return (
+      <div className="dark flex items-center justify-center w-full h-screen bg-dark_bg_1">
+        <div className="text-center">
+          <div className="text-dark_text_1 text-lg">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dark">
