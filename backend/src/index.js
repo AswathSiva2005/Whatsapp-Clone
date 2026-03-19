@@ -12,12 +12,18 @@ dns.setDefaultResultOrder("ipv4first");
 //env variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGO_URI;
 const PORT = process.env.PORT || 8000;
-const allowedOrigins = [
+const normalizeOrigin = (value = "") => value.replace(/\/$/, "");
+
+const allowedOrigins = new Set([
   "http://localhost:3000",
   "http://localhost:3002",
   "https://whatsapp-clone-frontend-liart.vercel.app",
   process.env.CLIENT_ENDPOINT,
-].filter(Boolean);
+]
+  .filter(Boolean)
+  .flatMap((value) => String(value).split(","))
+  .map((value) => normalizeOrigin(value.trim()))
+  .filter(Boolean));
 
 if (!DATABASE_URL) {
   logger.error("MongoDB URI missing. Set DATABASE_URL or MONGO_URI in .env");
@@ -49,7 +55,24 @@ server = app.listen(PORT, () => {
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const cleanedOrigin = normalizeOrigin(origin);
+      const isVercelPreview = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(
+        cleanedOrigin
+      );
+
+      if (allowedOrigins.has(cleanedOrigin) || isVercelPreview) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by Socket.IO CORS"));
+    },
     credentials: true,
   },
 });

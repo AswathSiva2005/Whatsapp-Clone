@@ -126,7 +126,13 @@ export const uploadProfilePicture = async (req, res, next) => {
 
       fs.writeFileSync(savedPath, buffer);
 
-      const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${fileName}`;
+      const forwardedProto = req.headers["x-forwarded-proto"];
+      const protocol =
+        (Array.isArray(forwardedProto)
+          ? forwardedProto[0]
+          : String(forwardedProto || "").split(",")[0]) || req.protocol;
+      const normalizedProtocol = protocol === "http" ? "https" : protocol;
+      const fileUrl = `${normalizedProtocol}://${req.get("host")}/uploads/${fileName}`;
       res.status(200).json({
         message: "Picture uploaded successfully.",
         url: fileUrl,

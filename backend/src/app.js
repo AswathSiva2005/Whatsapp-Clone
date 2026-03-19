@@ -32,6 +32,9 @@ const allowedOrigins = new Set([
 //create express app
 const app = express();
 
+//trust reverse proxy (Render) so protocol/host are resolved correctly
+app.set("trust proxy", 1);
+
 //morgan
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
