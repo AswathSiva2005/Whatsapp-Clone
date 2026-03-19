@@ -11,9 +11,19 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: [true, "Please provide tour email address"],
-      unqiue: [true, "This email address already exist"],
+      unique: [true, "This email address already exist"],
       lowercase: true,
       validate: [validator.isEmail, "Please provide a valid email address"],
+    },
+    phone: {
+      type: String,
+      required: [true, "Please provide your phone number"],
+      unique: [true, "This phone number already exists"],
+      trim: true,
+      validate: {
+        validator: (value) => /^\+?[1-9]\d{9,14}$/.test(value),
+        message: "Please provide a valid phone number",
+      },
     },
     picture: {
       type: String,
@@ -35,6 +45,11 @@ const userSchema = mongoose.Schema(
         128,
         "Plase make sure your password is less than 128 characters long",
       ],
+    },
+    blockedUsers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "UserModel",
+      default: [],
     },
   },
   {

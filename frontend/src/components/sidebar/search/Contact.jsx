@@ -11,8 +11,17 @@ function Contact({ contact, setSearchResults, socket }) {
     token,
   };
   const openConversation = async () => {
-    let newConvo = await dispatch(open_create_conversation(values));
-    socket.emit("join conversation", newConvo.payload._id);
+    try {
+      let result = await dispatch(open_create_conversation(values));
+      if (result.payload?._id) {
+        socket.emit("join conversation", result.payload._id);
+        setSearchResults([]);
+      } else if (result.payload) {
+        alert(result.payload);
+      }
+    } catch (error) {
+      alert("Failed to open chat. Try again.");
+    }
   };
   return (
     <li

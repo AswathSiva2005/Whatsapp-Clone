@@ -9,6 +9,14 @@ import fileUpload from "express-fileupload";
 import cors from "cors";
 import createHttpError from "http-errors";
 import routes from "./routes/index.js";
+import path from "path";
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3002",
+  "https://whatsapp-clone-frontend-liart.vercel.app",
+  process.env.CLIENT_ENDPOINT,
+].filter(Boolean);
 
 //dotEnv config
 dotenv.config();
@@ -22,13 +30,18 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 //helmet
-app.use(helmet());
+app.use(
+  helmet({
+    // Frontend runs on a different origin in development and needs to load avatars from backend /uploads.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
 //parse json request url
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 //parse json request body
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 //sanitize request data
 app.use(mongoSanitize());
@@ -42,17 +55,26 @@ app.use(compression());
 //file upload
 app.use(
   fileUpload({
-    useTempFiles: true,
+    useTempFiles: false,
   })
 );
 
 //cors
 app.use(
   cors({
-    origin: "https://whatsapp-clone-frontend-liart.vercel.app",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
+//serve local upload fallback files
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 //api v1 routes
 app.use("/api/v1", routes);

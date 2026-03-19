@@ -8,6 +8,7 @@ import {
 } from "../../../utils/chat";
 import { dateHandler } from "../../../utils/date";
 import { capitalize } from "../../../utils/string";
+import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 
 function Conversation({ convo, socket, online, typing }) {
   const dispatch = useDispatch();
@@ -45,10 +46,16 @@ function Conversation({ convo, socket, online, typing }) {
             <img
               src={
                 convo.isGroup
-                  ? convo.picture
+                  ? convo.picture || getTwoLetterAvatarUrl(convo.name)
                   : getConversationPicture(user, convo.users)
               }
               alt="picture"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = convo.isGroup
+                  ? getTwoLetterAvatarUrl(convo.name)
+                  : getTwoLetterAvatarUrl(getConversationName(user, convo.users));
+              }}
               className="w-full h-full object-cover "
             />
           </div>

@@ -8,6 +8,7 @@ import {
   getConversations,
   updateMessagesAndConversations,
 } from "../features/chatSlice";
+import { updateMessageStatus } from "../features/chatSlice";
 import Call from "../components/Chat/call/Call";
 import {
   getConversationId,
@@ -136,7 +137,8 @@ function Home({ socket }) {
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
         setStream(stream);
-      });
+      })
+      .catch(() => {});
   };
 
   const enableMedia = () => {
@@ -157,14 +159,32 @@ function Home({ socket }) {
     //listening when a user is typing
     socket.on("typing", (conversation) => setTyping(conversation));
     socket.on("stop typing", () => setTyping(false));
+
+    //message status listeners
+    socket.on("message delivered", ({ messageId }) => {
+      dispatch(updateMessageStatus({ messageId, status: "delivered" }));
+    });
+    socket.on("message read", ({ messageId }) => {
+      dispatch(updateMessageStatus({ messageId, status: "read" }));
+    });
+
+    return () => {
+      socket.off("receive message");
+      socket.off("typing");
+      socket.off("stop typing");
+      socket.off("message delivered");
+      socket.off("message read");
+    };
   }, []);
   return (
     <>
       <div className="h-screen dark:bg-dark_bg_1 flex items-center justify-center overflow-hidden">
         {/*container*/}
-        <div className="container h-screen flex py-[19px]">
+        <div className="container h-screen flex py-[19px] flex-col lg:flex-row gap-0">
           {/*Sidebar*/}
-          <Sidebar onlineUsers={onlineUsers} typing={typing} />
+          <div className="hidden md:block md:max-w-[30%] w-full md:w-auto">
+            <Sidebar onlineUsers={onlineUsers} typing={typing} />
+          </div>
           {activeConversation._id ? (
             <ChatContainer
               onlineUsers={onlineUsers}

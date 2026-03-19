@@ -1,3 +1,5 @@
+import { MessageModel } from "./models/index.js";
+
 let onlineUsers = [];
 export default function (socket, io) {
   //user joins or opens the application
@@ -26,12 +28,52 @@ export default function (socket, io) {
 
   //send and receive message
   socket.on("send message", (message) => {
-    let conversation = message.conversation;
+    const conversation = message.conversation;
     if (!conversation.users) return;
-    conversation.users.forEach((user) => {
-      if (user._id === message.sender._id) return;
-      socket.in(user._id).emit("receive message", message);
+    conversation.users.forEach((recipient) => {
+      if (String(recipient._id) === String(message.sender._id)) return;
+
+      // If recipient has blocked sender, do not deliver this message.
+      const recipientBlockedUsers = recipient.blockedUsers || [];
+      const senderId = String(message.sender._id);
+      const isSenderBlocked = recipientBlockedUsers.some(
+        (blockedId) => String(blockedId) === senderId
+      );
+      if (isSenderBlocked) return;
+
+      socket.in(recipient._id).emit("receive message", message);
+
+      const recipientIsOnline = onlineUsers.some(
+        (u) => String(u.userId) === String(recipient._id)
+      );
+      if (recipientIsOnline) {
+        socket.in(senderId).emit("message delivered", {
+          messageId: message._id,
+        });
+      }
     });
+  });
+
+  //message delivered
+  socket.on("message delivered", async (data) => {
+    const { messageId, senderId } = data;
+    try {
+      await MessageModel.findByIdAndUpdate(messageId, { status: "delivered" });
+    } catch (error) {
+      // swallow socket-side status errors to keep chat flow uninterrupted
+    }
+    socket.in(senderId).emit("message delivered", { messageId });
+  });
+
+  //message read
+  socket.on("message read", async (data) => {
+    const { messageId, senderId } = data;
+    try {
+      await MessageModel.findByIdAndUpdate(messageId, { status: "read" });
+    } catch (error) {
+      // swallow socket-side status errors to keep chat flow uninterrupted
+    }
+    socket.in(senderId).emit("message read", { messageId });
   });
 
   //typing

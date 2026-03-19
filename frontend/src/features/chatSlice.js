@@ -146,6 +146,38 @@ export const chatSlice = createSlice({
       let fileToRemove = [files[index]];
       state.files = files.filter((file) => !fileToRemove.includes(file));
     },
+    updateMessageStatus: (state, action) => {
+      const { messageId, status } = action.payload;
+      const message = state.messages.find((m) => m._id === messageId);
+      if (message) {
+        message.status = status;
+      }
+    },
+    toggleMessageStarred: (state, action) => {
+      const { messageId, userId, starred } = action.payload;
+      const message = state.messages.find((m) => m._id === messageId);
+      if (!message) return;
+      const currentStarredBy = Array.isArray(message.starredBy)
+        ? [...message.starredBy]
+        : [];
+
+      if (starred) {
+        if (!currentStarredBy.some((id) => String(id) === String(userId))) {
+          currentStarredBy.push(userId);
+        }
+      } else {
+        message.starredBy = currentStarredBy.filter(
+          (id) => String(id) !== String(userId)
+        );
+        return;
+      }
+
+      message.starredBy = currentStarredBy;
+    },
+    removeMessageById: (state, action) => {
+      const messageId = action.payload;
+      state.messages = state.messages.filter((m) => m._id !== messageId);
+    },
   },
   extraReducers(builder) {
     builder
@@ -212,6 +244,9 @@ export const {
   addFiles,
   clearFiles,
   removeFileFromFiles,
+  updateMessageStatus,
+  toggleMessageStarred,
+  removeMessageById,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

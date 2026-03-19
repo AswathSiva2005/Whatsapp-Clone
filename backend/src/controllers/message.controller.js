@@ -2,9 +2,13 @@ import logger from "../configs/logger.config.js";
 import { updateLatestMessage } from "../services/conversation.service.js";
 import {
   createMessage,
+  deleteMessageForUser,
   getConvoMessages,
+  getStarredMessagesForUser,
   populateMessage,
+  toggleMessageStarForUser,
 } from "../services/message.service.js";
+import { UserModel } from "../models/index.js";
 
 export const sendMessage = async (req, res, next) => {
   try {
@@ -31,12 +35,49 @@ export const sendMessage = async (req, res, next) => {
 export const getMessages = async (req, res, next) => {
   try {
     const convo_id = req.params.convo_id;
+    const user_id = req.user.userId;
     if (!convo_id) {
       logger.error("Please add a conversation id in params.");
       res.sendStatus(400);
     }
-    const messages = await getConvoMessages(convo_id);
+    const currentUser = await UserModel.findById(user_id).select("blockedUsers");
+    const blockedUserIds = currentUser?.blockedUsers || [];
+    const messages = await getConvoMessages(convo_id, blockedUserIds, user_id);
     res.json(messages);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const toggleStarMessage = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await toggleMessageStarForUser(messageId, userId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteSingleMessage = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.userId;
+
+    const result = await deleteMessageForUser(messageId, userId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getStarredMessages = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const messages = await getStarredMessagesForUser(userId);
+    res.status(200).json(messages);
   } catch (error) {
     next(error);
   }

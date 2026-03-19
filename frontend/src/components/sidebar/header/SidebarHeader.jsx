@@ -3,10 +3,17 @@ import { ChatIcon, CommunityIcon, DotsIcon, StoryIcon } from "../../../svg";
 import { useState } from "react";
 import Menu from "./Menu";
 import { CreateGroup } from "./createGroup";
+import SettingsPanel from "./SettingsPanel";
+import StarredMessagesPanel from "./StarredMessagesPanel";
+import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
+
 export default function SidebarHeader() {
   const { user } = useSelector((state) => state.user);
   const [showMenu, setShowMenu] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showStarredMessages, setShowStarredMessages] = useState(false);
+
   return (
     <>
       {/*Sidebar header*/}
@@ -16,8 +23,12 @@ export default function SidebarHeader() {
           {/*user image*/}
           <button className="btn">
             <img
-              src={user.picture}
+              src={user.picture || getTwoLetterAvatarUrl(user.name)}
               alt={user.name}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = getTwoLetterAvatarUrl(user.name);
+              }}
               className="w-full h-full rounded-full object-cover"
             />
           </button>
@@ -46,7 +57,12 @@ export default function SidebarHeader() {
                 <DotsIcon className="dark:fill-dark_svg_1" />
               </button>
               {showMenu ? (
-                <Menu setShowCreateGroup={setShowCreateGroup} />
+                <Menu
+                  setShowCreateGroup={setShowCreateGroup}
+                  setShowSettings={setShowSettings}
+                  setShowStarredMessages={setShowStarredMessages}
+                  setShowMenu={setShowMenu}
+                />
               ) : null}
             </li>
           </ul>
@@ -55,6 +71,10 @@ export default function SidebarHeader() {
       {/*Create Group*/}
       {showCreateGroup && (
         <CreateGroup setShowCreateGroup={setShowCreateGroup} />
+      )}
+      {showSettings && <SettingsPanel setShowSettings={setShowSettings} />}
+      {showStarredMessages && (
+        <StarredMessagesPanel setShowStarredMessages={setShowStarredMessages} />
       )}
     </>
   );

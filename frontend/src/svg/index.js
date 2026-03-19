@@ -9,6 +9,7 @@ import DotsIcon from "./Dots";
 import FilterIcon from "./FilterIcon";
 import SeenIcon from "./Seen";
 import Logo from "./Logo";
+import SingleTickIcon from "./SingleTick";
 import ReturnIcon from "./Return";
 import SearchLargeIcon from "./SearchLarge";
 import EmojiIcon from "./Emoji";
@@ -45,6 +46,7 @@ export {
   DotsIcon,
   FilterIcon,
   SeenIcon,
+    SingleTickIcon,
   Logo,
   ReturnIcon,
   SearchLargeIcon,

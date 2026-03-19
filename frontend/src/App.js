@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,14 +12,32 @@ import SocketContext from "./context/SocketContext";
 import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
+import SettingsPage from "./pages/settings";
+
+const API_ENDPOINT =
+  process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
 //socket io
-const socket = io(process.env.REACT_APP_API_ENDPOINT.split("/api/v1")[0]);
+const socket = io(API_ENDPOINT.split("/api/v1")[0], {
+  autoConnect: false,
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1500,
+});
 
 function App() {
   //const [connected, setConnected] = useState(false);
-  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { token } = user;
+
+  useEffect(() => {
+    if (token && !socket.connected) {
+      socket.connect();
+    }
+
+    if (!token && socket.connected) {
+      socket.disconnect();
+    }
+  }, [token]);
 
   return (
     <div className="dark">
@@ -42,6 +60,13 @@ function App() {
               exact
               path="/register"
               element={!token ? <Register /> : <Navigate to="/" />}
+            />
+            <Route
+              exact
+              path="/settings"
+              element={
+                token ? <SettingsPage /> : <Navigate to="/login" />
+              }
             />
           </Routes>
         </Router>

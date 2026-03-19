@@ -1,11 +1,28 @@
+import dotenv from "dotenv";
+import dns from "dns";
 import mongoose from "mongoose";
 import { Server } from "socket.io";
 import app from "./app.js";
 import logger from "./configs/logger.config.js";
 import SocketServer from "./SocketServer.js";
+
+dotenv.config();
+dns.setDefaultResultOrder("ipv4first");
+
 //env variables
-const { DATABASE_URL } = process.env;
+const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGO_URI;
 const PORT = process.env.PORT || 8000;
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3002",
+  "https://whatsapp-clone-frontend-liart.vercel.app",
+  process.env.CLIENT_ENDPOINT,
+].filter(Boolean);
+
+if (!DATABASE_URL) {
+  logger.error("MongoDB URI missing. Set DATABASE_URL or MONGO_URI in .env");
+  process.exit(1);
+}
 
 //exit on mognodb error
 mongoose.connection.on("error", (err) => {
@@ -32,7 +49,8 @@ server = app.listen(PORT, () => {
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
-    origin: process.env.CLIENT_ENDPOINT,
+    origin: allowedOrigins,
+    credentials: true,
   },
 });
 io.on("connection", (socket) => {

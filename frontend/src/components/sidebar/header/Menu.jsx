@@ -1,8 +1,12 @@
 import { useDispatch } from "react-redux";
 import { logout } from "../../../features/userSlice";
-import { useState } from "react";
 
-export default function Menu({ setShowCreateGroup }) {
+export default function Menu({
+  setShowCreateGroup,
+  setShowSettings,
+  setShowStarredMessages,
+  setShowMenu,
+}) {
   const dispatch = useDispatch();
   return (
     <>
@@ -10,22 +14,40 @@ export default function Menu({ setShowCreateGroup }) {
         <ul>
           <li
             className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3"
-            onClick={() => setShowCreateGroup(true)}
+            onClick={() => {
+              setShowCreateGroup(true);
+              setShowMenu(false);
+            }}
           >
             <span>New group</span>
           </li>
           <li className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3">
             <span>New community</span>
           </li>
-          <li className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3">
-            <span>Starred messaged</span>
+          <li
+            className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3"
+            onClick={() => {
+              setShowStarredMessages(true);
+              setShowMenu(false);
+            }}
+          >
+            <span>Starred messages</span>
           </li>
-          <li className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3">
+          <li
+            className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3"
+            onClick={() => {
+              setShowSettings(true);
+              setShowMenu(false);
+            }}
+          >
             <span>Settings</span>
           </li>
           <li
             className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3"
-            onClick={() => dispatch(logout())}
+            onClick={() => {
+              dispatch(logout());
+              setShowMenu(false);
+            }}
           >
             <span>Logout</span>
           </li>

@@ -6,35 +6,48 @@ import {
   VideoCallIcon,
 } from "../../../svg";
 import { capitalize } from "../../../utils/string";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import SocketContext from "../../../context/SocketContext";
-import Peer from "simple-peer";
 import {
   getConversationName,
   getConversationPicture,
 } from "../../../utils/chat";
-function ChatHeader({ online, callUser, socket }) {
+import ContactInfoDrawer from "./ContactInfoDrawer";
+import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
+function ChatHeader({ online, callUser, socket, onSearchClick, showSearch }) {
   const { activeConversation } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.user);
+  const [showContactInfo, setShowContactInfo] = useState(false);
 
   return (
-    <div className="h-[59px] dark:bg-dark_bg_2 flex items-center p16 select-none">
+    <div className="h-[59px] dark:bg-dark_bg_2 flex items-center p16 select-none relative">
       {/*Container*/}
       <div className="w-full flex items-center justify-between">
         {/*left*/}
-        <div className="flex items-center gap-x-4">
+        <button
+          className="flex items-center gap-x-4 hover:dark:bg-dark_bg_3 rounded-lg px-1 py-1"
+          onClick={() => setShowContactInfo(true)}
+        >
           {/*Conversation image*/}
-          <button className="btn">
+          <span className="btn">
             <img
               src={
                 activeConversation.isGroup
-                  ? activeConversation.picture
+                  ? activeConversation.picture || getTwoLetterAvatarUrl(activeConversation.name)
                   : getConversationPicture(user, activeConversation.users)
               }
               alt=""
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = activeConversation.isGroup
+                  ? getTwoLetterAvatarUrl(activeConversation.name)
+                  : getTwoLetterAvatarUrl(
+                      getConversationName(user, activeConversation.users)
+                    );
+              }}
               className="w-full h-full rounded-full object-cover"
             />
-          </button>
+          </span>
           {/*Conversation name and online status*/}
           <div className="flex flex-col">
             <h1 className="dark:text-white text-md font-bold">
@@ -50,25 +63,24 @@ function ChatHeader({ online, callUser, socket }) {
               {online ? "online" : ""}
             </span>
           </div>
-        </div>
+        </button>
         {/*Right*/}
         <ul className="flex items-center gap-x-2.5">
-          {1 == 1 ? (
-            <li onClick={() => callUser()}>
-              <button className="btn">
-                <VideoCallIcon />
-              </button>
-            </li>
-          ) : null}
-          {1 == 1 ? (
-            <li>
-              <button className="btn">
-                <CallIcon />
-              </button>
-            </li>
-          ) : null}
+          <li onClick={() => callUser()}>
+            <button className="btn">
+              <VideoCallIcon />
+            </button>
+          </li>
           <li>
             <button className="btn">
+              <CallIcon />
+            </button>
+          </li>
+          <li>
+            <button
+              className={`btn ${showSearch ? "dark:bg-dark_bg_3" : ""}`}
+              onClick={onSearchClick}
+            >
               <SearchLargeIcon className="dark:fill-dark_svg_1" />
             </button>
           </li>
@@ -79,6 +91,12 @@ function ChatHeader({ online, callUser, socket }) {
           </li>
         </ul>
       </div>
+      {showContactInfo && (
+        <ContactInfoDrawer
+          activeConversation={activeConversation}
+          onClose={() => setShowContactInfo(false)}
+        />
+      )}
     </div>
   );
 }

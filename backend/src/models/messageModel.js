@@ -17,6 +17,23 @@ const messageSchema = mongoose.Schema(
       ref: "ConversationModel",
     },
     files: [],
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
+    },
+    starredBy: [
+      {
+        type: ObjectId,
+        ref: "UserModel",
+      },
+    ],
+    deletedFor: [
+      {
+        type: ObjectId,
+        ref: "UserModel",
+      },
+    ],
   },
   {
     collection: "messages",

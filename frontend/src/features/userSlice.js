@@ -10,9 +10,11 @@ const initialState = {
     id: "",
     name: "",
     email: "",
+    phone: "",
     picture: "",
     status: "",
     token: "",
+    blockedUsers: [],
   },
 };
 
@@ -54,10 +56,14 @@ export const userSlice = createSlice({
         id: "",
         name: "",
         email: "",
+        phone: "",
         picture: "",
         status: "",
         token: "",
       };
+    },
+    setUser: (state, action) => {
+      state.user = { ...state.user, ...action.payload };
     },
     changeStatus: (state, action) => {
       state.status = action.payload;
@@ -92,6 +98,6 @@ export const userSlice = createSlice({
   },
 });
 
-export const { logout, changeStatus } = userSlice.actions;
+export const { logout, setUser, changeStatus } = userSlice.actions;
 
 export default userSlice.reducer;

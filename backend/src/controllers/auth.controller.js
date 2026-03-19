@@ -5,10 +5,11 @@ import { findUser } from "../services/user.service.js";
 
 export const register = async (req, res, next) => {
   try {
-    const { name, email, picture, status, password } = req.body;
+    const { name, email, phone, picture, status, password } = req.body;
     const newUser = await createUser({
       name,
       email,
+      phone,
       picture,
       status,
       password,
@@ -36,8 +37,10 @@ export const register = async (req, res, next) => {
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        phone: newUser.phone,
         picture: newUser.picture,
         status: newUser.status,
+        blockedUsers: newUser.blockedUsers || [],
         token: access_token,
       },
     });
@@ -71,9 +74,11 @@ export const login = async (req, res, next) => {
       user: {
         _id: user._id,
         name: user.name,
+        phone: user.phone,
         email: user.email,
         picture: user.picture,
         status: user.status,
+        blockedUsers: user.blockedUsers || [],
         token: access_token,
       },
     });
@@ -108,6 +113,7 @@ export const refreshToken = async (req, res, next) => {
     res.json({
       user: {
         _id: user._id,
+        phone: user.phone,
         name: user.name,
         email: user.email,
         picture: user.picture,

@@ -5,8 +5,10 @@ import {
   doesConversationExist,
   getUserConversations,
   populateConversation,
+  isUserBlocked,
 } from "../services/conversation.service.js";
 import { findUser } from "../services/user.service.js";
+import { ConversationModel, MessageModel } from "../models/index.js";
 
 export const create_open_conversation = async (req, res, next) => {
   try {
@@ -16,6 +18,7 @@ export const create_open_conversation = async (req, res, next) => {
       logger.error("receiver_id is required");
       throw createHttpError.BadGateway("Something went wrong ");
     }
+
     const existedConversation = await doesConversationExist(
       sender_id,
       receiver_id
@@ -23,6 +26,8 @@ export const create_open_conversation = async (req, res, next) => {
     if (existedConversation) {
       res.json(existedConversation);
     } else {
+      // Allow opening/creating conversation with anyone (including blocked users)
+      // This lets users unblock from the contact drawer
       console.log("cool");
       let reciever_user = await findUser(receiver_id);
       let convoData = {
@@ -80,6 +85,75 @@ export const createGroup = async (req, res, next) => {
       "-password"
     );
     res.status(200).json(populatedConvo);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const clearChat = async (req, res, next) => {
+  try {
+    const { conversationId } = req.body;
+    const userId = req.user.userId;
+
+    if (!conversationId) {
+      throw createHttpError.BadRequest("Conversation ID is required.");
+    }
+
+    const conversation = await ConversationModel.findById(conversationId);
+    if (!conversation) {
+      throw createHttpError.NotFound("Conversation not found.");
+    }
+
+    // Check if user is part of this conversation
+    if (!conversation.users.includes(userId)) {
+      throw createHttpError.Forbidden("You are not part of this conversation.");
+    }
+
+    // Delete all messages in this conversation
+    await MessageModel.deleteMany({ conversationId });
+
+    res.status(200).json({ message: "Chat cleared successfully." });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteConversation = async (req, res, next) => {
+  try {
+    const { conversationId } = req.body;
+    const userId = req.user.userId;
+
+    if (!conversationId) {
+      throw createHttpError.BadRequest("Conversation ID is required.");
+    }
+
+    const conversation = await ConversationModel.findById(conversationId);
+    if (!conversation) {
+      throw createHttpError.NotFound("Conversation not found.");
+    }
+
+    // Check if user is part of this conversation
+    if (!conversation.users.includes(userId)) {
+      throw createHttpError.Forbidden("You are not part of this conversation.");
+    }
+
+    // For group chats, remove user from the group
+    if (conversation.isGroup) {
+      conversation.users = conversation.users.filter(
+        (u) => u.toString() !== userId
+      );
+      if (conversation.users.length === 0) {
+        // Delete the group if no users left
+        await ConversationModel.findByIdAndDelete(conversationId);
+      } else {
+        await conversation.save();
+      }
+    } else {
+      // For 1-on-1 chats, delete the entire conversation
+      await ConversationModel.findByIdAndDelete(conversationId);
+    }
+
+    res.status(200).json({ message: "Conversation deleted successfully." });
   } catch (error) {
     next(error);
   }

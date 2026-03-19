@@ -9,49 +9,59 @@ import { changeStatus, registerUser } from "../../features/userSlice";
 import { useState } from "react";
 import Picture from "./Picture";
 import axios from "axios";
-const cloud_name = process.env.REACT_APP_CLOUD_NAME;
-const cloud_secret = process.env.REACT_APP_CLOUD_SECRET;
+const cloud_name =
+  process.env.REACT_APP_CLOUD_NAME || process.env.REACT_APP_CLOUD_NAME2;
+const cloud_secret =
+  process.env.REACT_APP_CLOUD_SECRET || process.env.REACT_APP_CLOUD_SECRET2;
 export default function RegisterForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { status, error } = useSelector((state) => state.user);
   const [picture, setPicture] = useState();
   const [readablePicture, setReadablePicture] = useState("");
+  const [uploadError, setUploadError] = useState("");
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(signUpSchema),
   });
   const onSubmit = async (data) => {
     dispatch(changeStatus("loading"));
+    setUploadError("");
+    let pictureUrl = "";
+
     if (picture) {
-      //upload to cloudinary and then register user
-      await uploadImage().then(async (response) => {
-        let res = await dispatch(
-          registerUser({ ...data, picture: response.secure_url })
+      try {
+        const response = await uploadImage();
+        pictureUrl = response?.secure_url || "";
+      } catch (err) {
+        setUploadError(
+          "Image upload failed. Please check Cloudinary keys or continue without image."
         );
-        if (res?.payload?.user) {
-          navigate("/");
-        }
-      });
-    } else {
-      let res = await dispatch(registerUser({ ...data, picture: "" }));
-      if (res?.payload?.user) {
-        navigate("/");
       }
+    }
+
+    let res = await dispatch(registerUser({ ...data, picture: pictureUrl }));
+    if (res?.payload?.user) {
+      navigate("/");
     }
   };
   const uploadImage = async () => {
+    if (!cloud_name || !cloud_secret) {
+      throw new Error("Missing Cloudinary configuration");
+    }
+
     let formData = new FormData();
     formData.append("upload_preset", cloud_secret);
     formData.append("file", picture);
+
     const { data } = await axios.post(
       `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
       formData
     );
+
     return data;
   };
   return (
@@ -80,6 +90,13 @@ export default function RegisterForm() {
             error={errors?.email?.message}
           />
           <AuthInput
+            name="phone"
+            type="text"
+            placeholder="Phone number (+91xxxxxxxxxx)"
+            register={register}
+            error={errors?.phone?.message}
+          />
+          <AuthInput
             name="status"
             type="text"
             placeholder="Status (Optional)"
@@ -100,6 +117,11 @@ export default function RegisterForm() {
             setPicture={setPicture}
           />
           {/*if we have an error*/}
+          {uploadError ? (
+            <div>
+              <p className="text-red-400">{uploadError}</p>
+            </div>
+          ) : null}
           {error ? (
             <div>
               <p className="text-red-400">{error}</p>

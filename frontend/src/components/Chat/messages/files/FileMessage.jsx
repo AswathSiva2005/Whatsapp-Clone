@@ -2,6 +2,7 @@ import moment from "moment";
 import TraingleIcon from "../../../../svg/triangle";
 import FileImageVideo from "./FileImageVideo";
 import FileOthers from "./FileOthers";
+import { getTwoLetterAvatarUrl } from "../../../../utils/avatar";
 
 export default function FileMessage({ FileMessage, message, me }) {
   const { file, type } = FileMessage;
@@ -17,8 +18,12 @@ export default function FileMessage({ FileMessage, message, me }) {
         {!me && message.conversation.isGroup && (
           <div className="absolute top-0.5 left-[-37px]">
             <img
-              src={message.sender.picture}
+              src={message.sender.picture || getTwoLetterAvatarUrl(message.sender.name)}
               alt=""
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = getTwoLetterAvatarUrl(message.sender.name);
+              }}
               className="w-8 h-8 rounded-full"
             />
           </div>

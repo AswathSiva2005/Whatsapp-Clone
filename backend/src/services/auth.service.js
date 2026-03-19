@@ -7,10 +7,11 @@ import { UserModel } from "../models/index.js";
 const { DEFAULT_PICTURE, DEFAULT_STATUS } = process.env;
 
 export const createUser = async (userData) => {
-  const { name, email, picture, status, password } = userData;
+  const { name, email, phone, picture, status, password } = userData;
+  const normalizedEmail = email?.toLowerCase();
 
   //check if fields are empty
-  if (!name || !email || !password) {
+  if (!name || !normalizedEmail || !phone || !password) {
     throw createHttpError.BadRequest("Please fill all fields.");
   }
 
@@ -34,17 +35,31 @@ export const createUser = async (userData) => {
   }
 
   //check if email address is valid
-  if (!validator.isEmail(email)) {
+  if (!validator.isEmail(normalizedEmail)) {
     throw createHttpError.BadRequest(
       "Please make sure to provide a valid email address."
     );
   }
 
+  //check if phone number is valid
+  if (!/^\+?[1-9]\d{9,14}$/.test(phone)) {
+    throw createHttpError.BadRequest(
+      "Please make sure to provide a valid phone number."
+    );
+  }
+
   //check if user already exist
-  const checkDb = await UserModel.findOne({ email });
-  if (checkDb) {
+  const checkEmail = await UserModel.findOne({ email: normalizedEmail });
+  if (checkEmail) {
     throw createHttpError.Conflict(
       "Please try again with a different email address, this email already exist."
+    );
+  }
+
+  const checkPhone = await UserModel.findOne({ phone });
+  if (checkPhone) {
+    throw createHttpError.Conflict(
+      "Please try again with a different phone number, this phone already exist."
     );
   }
 
@@ -60,12 +75,11 @@ export const createUser = async (userData) => {
     );
   }
 
-  //hash password--->to be done in the user model
-
   //adding user to databse
   const user = await new UserModel({
     name,
-    email,
+    email: normalizedEmail,
+    phone,
     picture: picture || DEFAULT_PICTURE,
     status: status || DEFAULT_STATUS,
     password,

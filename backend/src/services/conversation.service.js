@@ -1,6 +1,18 @@
 import createHttpError from "http-errors";
 import { ConversationModel, UserModel } from "../models/index.js";
 
+export const isUserBlocked = async (sender_id, receiver_id) => {
+  const sender = await UserModel.findById(sender_id);
+  if (!sender) throw createHttpError.NotFound("User not found.");
+  return sender.blockedUsers.includes(receiver_id);
+};
+
+export const isUserBlockedByReceiver = async (sender_id, receiver_id) => {
+  const receiver = await UserModel.findById(receiver_id);
+  if (!receiver) throw createHttpError.NotFound("User not found.");
+  return receiver.blockedUsers.includes(sender_id);
+};
+
 export const doesConversationExist = async (sender_id, receiver_id) => {
   let convos = await ConversationModel.find({
     isGroup: false,

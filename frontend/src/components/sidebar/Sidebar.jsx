@@ -8,7 +8,7 @@ import { SearchResults } from "./search";
 export default function Sidebar({ onlineUsers, typing }) {
   const [searchResults, setSearchResults] = useState([]);
   return (
-    <div className="flex0030 max-w-[30%] h-full select-none">
+    <div className="w-full md:max-w-[650px] h-full select-none border-r dark:border-r-dark_border_2">
       {/*Sidebar Header*/}
       <SidebarHeader />
       {/*Notifications */}
