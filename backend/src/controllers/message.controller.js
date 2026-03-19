@@ -14,13 +14,22 @@ export const sendMessage = async (req, res, next) => {
   try {
     const user_id = req.user.userId;
     const { message, convo_id, files } = req.body;
-    if (!convo_id || (!message && !files)) {
-      logger.error("Please provider a conversation id and a message body");
-      return res.sendStatus(400);
+    const normalizedMessage = typeof message === "string" ? message.trim() : "";
+    const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
+
+    if (!convo_id || (!normalizedMessage && !hasFiles)) {
+      logger.error("Please provide a conversation id and a non-empty message or files.");
+      return res.status(400).json({
+        error: {
+          status: 400,
+          message: "convo_id and a non-empty message or files are required.",
+        },
+      });
     }
+
     const msgData = {
       sender: user_id,
-      message,
+      message: normalizedMessage,
       conversation: convo_id,
       files: files || [],
     };
@@ -38,7 +47,12 @@ export const getMessages = async (req, res, next) => {
     const user_id = req.user.userId;
     if (!convo_id) {
       logger.error("Please add a conversation id in params.");
-      res.sendStatus(400);
+      return res.status(400).json({
+        error: {
+          status: 400,
+          message: "convo_id parameter is required.",
+        },
+      });
     }
     const currentUser = await UserModel.findById(user_id).select("blockedUsers");
     const blockedUserIds = currentUser?.blockedUsers || [];

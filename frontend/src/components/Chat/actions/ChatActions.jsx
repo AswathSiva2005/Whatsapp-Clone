@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ClipLoader } from "react-spinners";
 import { sendMessage } from "../../../features/chatSlice";
@@ -25,11 +25,26 @@ function ChatActions({ socket }) {
   };
   const SendMessageHandler = async (e) => {
     e.preventDefault();
+    const normalizedMessage = message.trim();
+    if (!normalizedMessage) {
+      return;
+    }
+
     setLoading(true);
-    let newMsg = await dispatch(sendMessage(values));
-    socket.emit("send message", newMsg.payload);
-    setMessage("");
-    setLoading(false);
+    const payload = {
+      ...values,
+      message: normalizedMessage,
+    };
+
+    try {
+      let newMsg = await dispatch(sendMessage(payload));
+      if (newMsg?.payload?._id) {
+        socket.emit("send message", newMsg.payload);
+        setMessage("");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <form

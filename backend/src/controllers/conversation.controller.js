@@ -16,7 +16,7 @@ export const create_open_conversation = async (req, res, next) => {
     const { receiver_id } = req.body;
     if (!receiver_id) {
       logger.error("receiver_id is required");
-      throw createHttpError.BadGateway("Something went wrong ");
+      throw createHttpError.BadRequest("receiver_id is required.");
     }
 
     const existedConversation = await doesConversationExist(
@@ -28,7 +28,6 @@ export const create_open_conversation = async (req, res, next) => {
     } else {
       // Allow opening/creating conversation with anyone (including blocked users)
       // This lets users unblock from the contact drawer
-      console.log("cool");
       let reciever_user = await findUser(receiver_id);
       let convoData = {
         name: reciever_user.name,
@@ -105,12 +104,16 @@ export const clearChat = async (req, res, next) => {
     }
 
     // Check if user is part of this conversation
-    if (!conversation.users.includes(userId)) {
+    const isParticipant = conversation.users.some(
+      (participantId) => String(participantId) === String(userId)
+    );
+
+    if (!isParticipant) {
       throw createHttpError.Forbidden("You are not part of this conversation.");
     }
 
     // Delete all messages in this conversation
-    await MessageModel.deleteMany({ conversationId });
+    await MessageModel.deleteMany({ conversation: conversationId });
 
     res.status(200).json({ message: "Chat cleared successfully." });
   } catch (error) {
@@ -133,7 +136,11 @@ export const deleteConversation = async (req, res, next) => {
     }
 
     // Check if user is part of this conversation
-    if (!conversation.users.includes(userId)) {
+    const isParticipant = conversation.users.some(
+      (participantId) => String(participantId) === String(userId)
+    );
+
+    if (!isParticipant) {
       throw createHttpError.Forbidden("You are not part of this conversation.");
     }
 

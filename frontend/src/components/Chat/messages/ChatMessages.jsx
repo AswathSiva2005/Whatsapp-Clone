@@ -53,7 +53,7 @@ function ChatMessages({ typing, searchResults = [], socket }) {
           messages.map((message) => (
             <div key={message._id}>
               {/*Message files */}
-              {message.files.length > 0
+              {Array.isArray(message.files) && message.files.length > 0
                 ? message.files.map((file, index) => (
                     <FileMessage
                       FileMessage={file}
@@ -64,7 +64,7 @@ function ChatMessages({ typing, searchResults = [], socket }) {
                   ))
                 : null}
               {/*Message text*/}
-              {message.message.length > 0 ? (
+              {typeof message.message === "string" && message.message.length > 0 ? (
                 <Message
                   message={message}
                   key={`${message._id}-text`}
