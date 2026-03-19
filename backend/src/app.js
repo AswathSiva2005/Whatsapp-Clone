@@ -11,15 +11,23 @@ import createHttpError from "http-errors";
 import routes from "./routes/index.js";
 import path from "path";
 
-const allowedOrigins = [
+//dotEnv config
+dotenv.config();
+
+const normalizeOrigin = (value = "") => value.replace(/\/$/, "");
+
+const envOrigins = [process.env.CLIENT_ENDPOINT, process.env.CLIENT_ENDPOINTS]
+  .filter(Boolean)
+  .flatMap((value) => String(value).split(","))
+  .map((value) => normalizeOrigin(value.trim()))
+  .filter(Boolean);
+
+const allowedOrigins = new Set([
   "http://localhost:3000",
   "http://localhost:3002",
   "https://whatsapp-clone-frontend-liart.vercel.app",
-  process.env.CLIENT_ENDPOINT,
-].filter(Boolean);
-
-//dotEnv config
-dotenv.config();
+  ...envOrigins,
+]);
 
 //create express app
 const app = express();
@@ -63,11 +71,22 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+        return;
       }
+
+      const cleanedOrigin = normalizeOrigin(origin);
+      const isVercelPreview = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(
+        cleanedOrigin
+      );
+
+      if (allowedOrigins.has(cleanedOrigin) || isVercelPreview) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -87,6 +106,9 @@ app.get("/", (req, res) => {
 
 //api v1 routes
 app.use("/api/v1", routes);
+
+//compat routes for clients missing /api/v1 prefix
+app.use("/", routes);
 
 app.use(async (req, res, next) => {
   next(createHttpError.NotFound("This route does not exist."));
