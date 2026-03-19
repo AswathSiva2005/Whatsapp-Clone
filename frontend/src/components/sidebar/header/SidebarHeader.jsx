@@ -5,6 +5,7 @@ import Menu from "./Menu";
 import { CreateGroup } from "./createGroup";
 import SettingsPanel from "./SettingsPanel";
 import StarredMessagesPanel from "./StarredMessagesPanel";
+import StatusPanel from "./StatusPanel";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 
 export default function SidebarHeader() {
@@ -13,6 +14,7 @@ export default function SidebarHeader() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showStarredMessages, setShowStarredMessages] = useState(false);
+  const [showStatusPanel, setShowStatusPanel] = useState(false);
 
   return (
     <>
@@ -40,7 +42,7 @@ export default function SidebarHeader() {
               </button>
             </li>
             <li>
-              <button className="btn">
+              <button className="btn" onClick={() => setShowStatusPanel(true)}>
                 <StoryIcon className="dark:fill-dark_svg_1" />
               </button>
             </li>
@@ -76,6 +78,7 @@ export default function SidebarHeader() {
       {showStarredMessages && (
         <StarredMessagesPanel setShowStarredMessages={setShowStarredMessages} />
       )}
+      {showStatusPanel && <StatusPanel setShowStatusPanel={setShowStatusPanel} />}
     </>
   );
 }
