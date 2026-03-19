@@ -2,6 +2,7 @@ import { useSelector } from "react-redux";
 import {
   CallIcon,
   DotsIcon,
+  ReturnIcon,
   SearchLargeIcon,
   VideoCallIcon,
 } from "../../../svg";
@@ -14,7 +15,14 @@ import {
 } from "../../../utils/chat";
 import ContactInfoDrawer from "./ContactInfoDrawer";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
-function ChatHeader({ online, callUser, socket, onSearchClick, showSearch }) {
+function ChatHeader({
+  online,
+  callUser,
+  socket,
+  onSearchClick,
+  showSearch,
+  onBack,
+}) {
   const { activeConversation } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.user);
   const [showContactInfo, setShowContactInfo] = useState(false);
@@ -24,55 +32,68 @@ function ChatHeader({ online, callUser, socket, onSearchClick, showSearch }) {
       {/*Container*/}
       <div className="w-full flex items-center justify-between">
         {/*left*/}
-        <button
-          className="flex items-center gap-x-4 hover:dark:bg-dark_bg_3 rounded-lg px-1 py-1"
-          onClick={() => setShowContactInfo(true)}
-        >
-          {/*Conversation image*/}
-          <span className="btn">
-            <img
-              src={
-                activeConversation.isGroup
-                  ? activeConversation.picture || getTwoLetterAvatarUrl(activeConversation.name)
-                  : getConversationPicture(user, activeConversation.users)
-              }
-              alt=""
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = activeConversation.isGroup
-                  ? getTwoLetterAvatarUrl(activeConversation.name)
-                  : getTwoLetterAvatarUrl(
-                      getConversationName(user, activeConversation.users)
-                    );
-              }}
-              className="w-full h-full rounded-full object-cover"
-            />
-          </span>
-          {/*Conversation name and online status*/}
-          <div className="flex flex-col">
-            <h1 className="dark:text-white text-md font-bold">
-              {activeConversation.isGroup
-                ? activeConversation.name
-                : capitalize(
-                    getConversationName(user, activeConversation.users).split(
-                      " "
-                    )[0]
-                  )}
-            </h1>
-            <span className="text-xs dark:text-dark_svg_2">
-              {online ? "online" : ""}
+        <div className="flex items-center gap-x-1 sm:gap-x-2">
+          {onBack ? (
+            <button
+              type="button"
+              className="btn md:hidden"
+              onClick={onBack}
+              aria-label="Back to chats"
+            >
+              <ReturnIcon className="dark:fill-dark_svg_1" />
+            </button>
+          ) : null}
+
+          <button
+            className="flex items-center gap-x-2 sm:gap-x-4 hover:dark:bg-dark_bg_3 rounded-lg px-1 py-1"
+            onClick={() => setShowContactInfo(true)}
+          >
+            {/*Conversation image*/}
+            <span className="btn">
+              <img
+                src={
+                  activeConversation.isGroup
+                    ? activeConversation.picture || getTwoLetterAvatarUrl(activeConversation.name)
+                    : getConversationPicture(user, activeConversation.users)
+                }
+                alt=""
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = activeConversation.isGroup
+                    ? getTwoLetterAvatarUrl(activeConversation.name)
+                    : getTwoLetterAvatarUrl(
+                        getConversationName(user, activeConversation.users)
+                      );
+                }}
+                className="w-full h-full rounded-full object-cover"
+              />
             </span>
-          </div>
-        </button>
+            {/*Conversation name and online status*/}
+            <div className="flex flex-col max-w-[150px] sm:max-w-none">
+              <h1 className="dark:text-white text-sm sm:text-md font-bold truncate">
+                {activeConversation.isGroup
+                  ? activeConversation.name
+                  : capitalize(
+                      getConversationName(user, activeConversation.users).split(
+                        " "
+                      )[0]
+                    )}
+              </h1>
+              <span className="text-xs dark:text-dark_svg_2">
+                {online ? "online" : ""}
+              </span>
+            </div>
+          </button>
+        </div>
         {/*Right*/}
-        <ul className="flex items-center gap-x-2.5">
+        <ul className="flex items-center gap-x-1 sm:gap-x-2.5">
           <li onClick={() => callUser()}>
-            <button className="btn">
+            <button className="btn hidden sm:flex">
               <VideoCallIcon />
             </button>
           </li>
           <li>
-            <button className="btn">
+            <button className="btn hidden sm:flex">
               <CallIcon />
             </button>
           </li>

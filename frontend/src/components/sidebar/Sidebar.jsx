@@ -94,7 +94,7 @@ export default function Sidebar({ onlineUsers, typing }) {
         </button>
       </aside>
 
-      <section className="flex-1 max-w-[360px] min-w-[320px] dark:bg-[#111b21] overflow-hidden">
+      <section className="flex-1 w-full min-w-0 md:max-w-[360px] dark:bg-[#111b21] overflow-hidden">
         {/*Sidebar Header*/}
         <SidebarHeader />
 

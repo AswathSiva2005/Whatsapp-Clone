@@ -65,9 +65,9 @@ export default function RegisterForm() {
     return data;
   };
   return (
-    <div className="min-h-screen w-full flex items-center justify-center overflow-hidden">
+    <div className="w-full flex items-center justify-center">
       {/* Container */}
-      <div className="w-full max-w-md space-y-8 p-10 dark:bg-dark_bg_2 rounded-xl">
+      <div className="w-full max-w-md space-y-6 sm:space-y-8 p-5 sm:p-8 md:p-10 dark:bg-dark_bg_2 rounded-xl">
         {/*Heading*/}
         <div className="text-center dark:text-dark_text_1">
           <h2 className="mt-6 text-3xl font-bold">Welcome</h2>

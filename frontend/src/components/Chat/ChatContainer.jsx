@@ -11,7 +11,7 @@ import axios from "axios";
 import SocketContext from "../../context/SocketContext";
 import { updateMessageStatus } from "../../features/chatSlice";
 
-function ChatContainer({ onlineUsers, typing, callUser, socket }) {
+function ChatContainer({ onlineUsers, typing, callUser, socket, onBack }) {
   const dispatch = useDispatch();
   const { activeConversation, files, messages } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.user);
@@ -79,7 +79,7 @@ function ChatContainer({ onlineUsers, typing, callUser, socket }) {
   };
 
   return (
-    <div className="relative w-full h-full border-l dark:border-l-dark_border_2 select-none overflow-hidden ">
+    <div className="relative w-full h-full border-l dark:border-l-dark_border_2 select-none overflow-hidden">
       {/*Container*/}
       <div>
         {/*Chat header*/}
@@ -92,6 +92,7 @@ function ChatContainer({ onlineUsers, typing, callUser, socket }) {
           callUser={callUser}
           onSearchClick={() => setShowSearch(!showSearch)}
           showSearch={showSearch}
+          onBack={onBack}
         />
         {showSearch && (
           <ChatMessageSearch

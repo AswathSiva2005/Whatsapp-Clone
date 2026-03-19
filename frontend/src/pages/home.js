@@ -6,6 +6,7 @@ import { Sidebar } from "../components/sidebar";
 import SocketContext from "../context/SocketContext";
 import {
   getConversations,
+  setActiveConversation,
   updateMessagesAndConversations,
 } from "../features/chatSlice";
 import { updateMessageStatus } from "../features/chatSlice";
@@ -179,20 +180,33 @@ function Home({ socket }) {
   return (
     <>
       <div className="h-screen dark:bg-[#0b141a] flex overflow-hidden">
-        <div className="w-full h-screen flex flex-col lg:flex-row gap-0">
+        <div className="w-full h-screen flex flex-col md:flex-row gap-0">
           {/*Sidebar*/}
-          <div className="hidden md:block w-full md:max-w-[420px]">
+          <div
+            className={`w-full md:w-[380px] lg:w-[420px] md:max-w-[420px] h-full ${
+              activeConversation?._id ? "hidden md:block" : "block"
+            }`}
+          >
             <Sidebar onlineUsers={onlineUsers} typing={typing} />
           </div>
-          {activeConversation._id ? (
-            <ChatContainer
-              onlineUsers={onlineUsers}
-              callUser={callUser}
-              typing={typing}
-            />
-          ) : (
-            <WhatsappHome />
-          )}
+
+          {/*Chat area*/}
+          <div
+            className={`w-full h-full ${
+              activeConversation?._id ? "block" : "hidden md:block"
+            }`}
+          >
+            {activeConversation._id ? (
+              <ChatContainer
+                onlineUsers={onlineUsers}
+                callUser={callUser}
+                typing={typing}
+                onBack={() => dispatch(setActiveConversation({}))}
+              />
+            ) : (
+              <WhatsappHome />
+            )}
+          </div>
         </div>
       </div>
       {/*Call*/}

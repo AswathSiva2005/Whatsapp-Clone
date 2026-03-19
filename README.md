@@ -1,3 +1,6 @@
+Github - https://github.com/AswathSiva2005/Whatsapp-Clone.git
+Demo Link - https://aswath-whatsapp-clone.vercel.app/
+
 # WhatsApp Web Clone (Full Stack)
 
 Simplified WhatsApp Web style chat application built with:
@@ -198,3 +201,5 @@ npm run build
 
 - If Cloudinary variables are not set, profile uploads are stored in backend/uploads and served as static files.
 - Ensure the frontend URL is included in backend CORS config via CLIENT_ENDPOINT or CLIENT_ENDPOINTS.
+
+
