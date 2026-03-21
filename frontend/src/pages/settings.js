@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Cropper from "react-easy-crop";
@@ -50,11 +50,25 @@ const SettingsPage = () => {
       notificationsPreview: true,
     };
   });
+  const [notificationPrefs, setNotificationPrefs] = useState(() => ({
+    muteAllNotifications: Boolean(user?.notificationSettings?.muteAllNotifications),
+    muteLoginNotifications: Boolean(user?.notificationSettings?.muteLoginNotifications),
+  }));
   const [appLockEnabled, setAppLockEnabled] = useState(Boolean(user.appLockEnabled));
   const [currentAppLockPin, setCurrentAppLockPin] = useState("");
   const [appLockPin, setAppLockPin] = useState("");
   const [appLockConfirmPin, setAppLockConfirmPin] = useState("");
   const [appLockSaving, setAppLockSaving] = useState(false);
+
+  useEffect(() => {
+    setNotificationPrefs({
+      muteAllNotifications: Boolean(user?.notificationSettings?.muteAllNotifications),
+      muteLoginNotifications: Boolean(user?.notificationSettings?.muteLoginNotifications),
+    });
+  }, [
+    user?.notificationSettings?.muteAllNotifications,
+    user?.notificationSettings?.muteLoginNotifications,
+  ]);
 
   const savePreferences = (nextPrefs) => {
     setPreferences(nextPrefs);
@@ -67,6 +81,33 @@ const SettingsPage = () => {
       [key]: !preferences[key],
     };
     savePreferences(nextPrefs);
+  };
+
+  const toggleNotificationPreference = async (key) => {
+    const nextValue = !notificationPrefs[key];
+    const nextPrefs = {
+      ...notificationPrefs,
+      [key]: nextValue,
+    };
+
+    setNotificationPrefs(nextPrefs);
+    try {
+      const { data } = await axios.patch(
+        `${resolveApiEndpoint()}/user/notification-settings`,
+        { [key]: nextValue },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (data?.user?.notificationSettings) {
+        dispatch(setUser({ notificationSettings: data.user.notificationSettings }));
+      }
+    } catch (err) {
+      setNotificationPrefs((prev) => ({
+        ...prev,
+        [key]: !nextValue,
+      }));
+      setError(err?.response?.data?.error?.message || "Failed to save notification settings.");
+    }
   };
 
   const getLocalStorageUsageKb = () => {
@@ -590,29 +631,28 @@ const SettingsPage = () => {
                 <div className="space-y-3">
                   <h4 className="text-sm text-green_1 font-medium">Notifications</h4>
                   <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
-                    Message notifications
+                    Mute all chat notifications
                     <input
                       type="checkbox"
-                      checked={preferences.notificationsMessage}
-                      onChange={() => togglePreference("notificationsMessage")}
+                      checked={notificationPrefs.muteAllNotifications}
+                      onChange={() =>
+                        toggleNotificationPreference("muteAllNotifications")
+                      }
                     />
                   </label>
                   <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
-                    Desktop alerts
+                    Mute login notifications
                     <input
                       type="checkbox"
-                      checked={preferences.notificationsDesktop}
-                      onChange={() => togglePreference("notificationsDesktop")}
+                      checked={notificationPrefs.muteLoginNotifications}
+                      onChange={() =>
+                        toggleNotificationPreference("muteLoginNotifications")
+                      }
                     />
                   </label>
-                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
-                    Show preview text
-                    <input
-                      type="checkbox"
-                      checked={preferences.notificationsPreview}
-                      onChange={() => togglePreference("notificationsPreview")}
-                    />
-                  </label>
+                  <p className="text-xs dark:text-dark_text_2">
+                    Per-chat mute can be changed from each chat info drawer.
+                  </p>
                 </div>
               )}
 

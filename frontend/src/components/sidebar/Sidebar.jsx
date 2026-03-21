@@ -54,6 +54,7 @@ export default function Sidebar({ onlineUsers, typing }) {
 
   const pinnedCount = pinnedConversationIds.length;
   const archivedCount = archivedConversationIds.length;
+  const mutedConversationIds = user?.notificationSettings?.mutedConversations || [];
 
   useEffect(() => {
     const pinnedKey = `pinned:${user._id}`;
@@ -221,6 +222,7 @@ export default function Sidebar({ onlineUsers, typing }) {
                 activeView={activeView}
                 pinnedConversationIds={pinnedConversationIds}
                 archivedConversationIds={archivedConversationIds}
+                mutedConversationIds={mutedConversationIds}
                 unreadByConversation={unreadByConversation}
                 activeConversationId={activeConversation?._id}
               />

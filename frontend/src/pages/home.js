@@ -46,6 +46,10 @@ function Home({ socket }) {
   const { user } = useSelector((state) => state.user);
   const { token } = user;
   const { activeConversation } = useSelector((state) => state.chat);
+  const notificationSettings = user?.notificationSettings || {};
+  const mutedConversationIds = Array.isArray(notificationSettings.mutedConversations)
+    ? notificationSettings.mutedConversations
+    : [];
   const [onlineUsers, setOnlineUsers] = useState([]);
   //call
   const [call, setCall] = useState(callData);
@@ -471,9 +475,65 @@ function Home({ socket }) {
   }, [dispatch, user?.token]);
 
   useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !("Notification" in window) ||
+      notificationSettings?.muteAllNotifications
+    ) {
+      return;
+    }
+
+    if (Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, [notificationSettings?.muteAllNotifications]);
+
+  useEffect(() => {
     //lsitening to receiving a message
     const receiveMessageHandler = (message) => {
       dispatch(updateMessagesAndConversations(message));
+
+      const conversationId = String(
+        message?.conversation?._id || message?.conversation || ""
+      );
+      const isActiveConversation =
+        String(activeConversation?._id || "") === conversationId;
+      const isConversationMuted = mutedConversationIds.some(
+        (id) => String(id) === conversationId
+      );
+
+      if (
+        notificationSettings?.muteAllNotifications ||
+        isConversationMuted ||
+        isActiveConversation
+      ) {
+        return;
+      }
+
+      if (typeof window === "undefined" || !("Notification" in window)) {
+        return;
+      }
+
+      if (Notification.permission !== "granted") {
+        return;
+      }
+
+      const senderName = message?.sender?.name || "New message";
+      const body = message?.message || "Sent you a message";
+      const icon = message?.sender?.picture || undefined;
+
+      try {
+        const notification = new Notification(senderName, {
+          body,
+          icon,
+          tag: `message-${conversationId}`,
+        });
+        notification.onclick = () => {
+          window.focus();
+        };
+      } catch {
+        // notification failure should not block chat state updates
+      }
     };
 
     //listening when a user is typing
@@ -513,7 +573,13 @@ function Home({ socket }) {
       socket.off("message delivered", deliveredHandler);
       socket.off("message read", readHandler);
     };
-  }, [dispatch, socket]);
+  }, [
+    dispatch,
+    socket,
+    activeConversation?._id,
+    mutedConversationIds,
+    notificationSettings?.muteAllNotifications,
+  ]);
   return (
     <>
       <div className="h-[100dvh] dark:bg-[#0b141a] flex overflow-hidden">

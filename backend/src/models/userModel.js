@@ -59,6 +59,22 @@ const userSchema = mongoose.Schema(
       type: String,
       default: "",
     },
+    notificationSettings: {
+      muteAllNotifications: {
+        type: Boolean,
+        default: false,
+      },
+      muteLoginNotifications: {
+        type: Boolean,
+        default: false,
+      },
+      mutedConversations: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "ConversationModel",
+        },
+      ],
+    },
   },
   {
     collection: "users",

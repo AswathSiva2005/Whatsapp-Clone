@@ -13,7 +13,7 @@ import {
 import { dateHandler } from "../../../utils/date";
 import { capitalize } from "../../../utils/string";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
-import { PinIcon } from "../../../svg";
+import { MuteIcon, PinIcon } from "../../../svg";
 
 function Conversation({
   convo,
@@ -23,6 +23,7 @@ function Conversation({
   groupOnlineCount = 0,
   unreadCount = 0,
   isPinned = false,
+  isMuted = false,
 }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
@@ -145,6 +146,9 @@ function Conversation({
           <div className="flex items-center gap-1">
             {isPinned && (
               <PinIcon className="dark:fill-dark_svg_2" />
+            )}
+            {isMuted && (
+              <MuteIcon className="dark:fill-dark_svg_2" />
             )}
             <span
               className={`min-w-[18px] h-[18px] rounded-full text-[11px] leading-[18px] text-center font-semibold ${

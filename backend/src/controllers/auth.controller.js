@@ -1,7 +1,7 @@
 import createHttpError from "http-errors";
 import { createUser, signUser } from "../services/auth.service.js";
 import { generateToken, verifyToken } from "../services/token.service.js";
-import { findUser } from "../services/user.service.js";
+import { findUser, mapNotificationSettings } from "../services/user.service.js";
 import logger from "../configs/logger.config.js";
 import axios from "axios";
 import FormData from "form-data";
@@ -48,6 +48,7 @@ export const register = async (req, res, next) => {
         status: newUser.status,
         blockedUsers: newUser.blockedUsers || [],
         appLockEnabled: Boolean(newUser.appLockEnabled),
+        notificationSettings: mapNotificationSettings(newUser),
         token: access_token,
       },
     });
@@ -87,6 +88,7 @@ export const login = async (req, res, next) => {
         status: user.status,
         blockedUsers: user.blockedUsers || [],
         appLockEnabled: Boolean(user.appLockEnabled),
+        notificationSettings: mapNotificationSettings(user),
         token: access_token,
       },
     });
@@ -127,6 +129,7 @@ export const refreshToken = async (req, res, next) => {
         picture: user.picture,
         status: user.status,
         appLockEnabled: Boolean(user.appLockEnabled),
+        notificationSettings: mapNotificationSettings(user),
         token: access_token,
       },
     });

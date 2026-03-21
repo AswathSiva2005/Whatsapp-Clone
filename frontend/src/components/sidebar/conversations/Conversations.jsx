@@ -8,6 +8,7 @@ export default function Conversations({
   activeView = "all",
   pinnedConversationIds = [],
   archivedConversationIds = [],
+  mutedConversationIds = [],
   unreadByConversation = {},
 }) {
   const { conversations, activeConversation } = useSelector(
@@ -45,6 +46,7 @@ export default function Conversations({
     });
 
   const pinnedSet = new Set(pinnedConversationIds);
+  const mutedSet = new Set(mutedConversationIds);
   const pinnedVisible = baseConversations.filter((c) => pinnedSet.has(c._id));
   const unpinnedVisible = baseConversations.filter((c) => !pinnedSet.has(c._id));
 
@@ -81,6 +83,7 @@ export default function Conversations({
               groupOnlineCount={groupOnlineCount}
               unreadCount={unreadByConversation[convo._id] || 0}
               isPinned={pinnedSet.has(convo._id)}
+              isMuted={mutedSet.has(convo._id)}
             />
           );
         })}

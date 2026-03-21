@@ -23,6 +23,28 @@ export default function RegisterForm() {
       if (res.payload.user._id) {
         sessionStorage.removeItem(`appLockUnlocked:${res.payload.user._id}`);
       }
+
+      const muteLoginNotifications = Boolean(
+        res.payload.user?.notificationSettings?.muteLoginNotifications
+      );
+      if (
+        !muteLoginNotifications &&
+        typeof window !== "undefined" &&
+        "Notification" in window
+      ) {
+        if (Notification.permission === "granted") {
+          try {
+            new Notification("Login successful", {
+              body: `Welcome back, ${res.payload.user?.name || "User"}.`,
+            });
+          } catch {
+            // ignore browser notification failures
+          }
+        } else if (Notification.permission === "default") {
+          Notification.requestPermission().catch(() => {});
+        }
+      }
+
       navigate("/");
     }
   };

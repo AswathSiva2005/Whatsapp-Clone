@@ -1,6 +1,17 @@
 import createHttpError from "http-errors";
-import { UserModel } from "../models/index.js";
+import { ConversationModel, UserModel } from "../models/index.js";
 import bcrypt from "bcrypt";
+
+export const mapNotificationSettings = (user) => {
+  const settings = user?.notificationSettings || {};
+  return {
+    muteAllNotifications: Boolean(settings.muteAllNotifications),
+    muteLoginNotifications: Boolean(settings.muteLoginNotifications),
+    mutedConversations: Array.isArray(settings.mutedConversations)
+      ? settings.mutedConversations.map((id) => String(id))
+      : [],
+  };
+};
 
 export const findUser = async (userId) => {
   const user = await UserModel.findById(userId);
@@ -131,4 +142,56 @@ export const verifyAppLockPin = async (userId, pin) => {
   }
 
   return { valid: true, appLockEnabled: true };
+};
+
+export const getUserNotificationSettings = async (userId) => {
+  const user = await UserModel.findById(userId).select("notificationSettings");
+  if (!user) throw createHttpError.NotFound("User not found.");
+  return mapNotificationSettings(user);
+};
+
+export const updateUserNotificationSettings = async (userId, values) => {
+  const { muteAllNotifications, muteLoginNotifications } = values;
+  const updates = {};
+
+  if (typeof muteAllNotifications === "boolean") {
+    updates["notificationSettings.muteAllNotifications"] = muteAllNotifications;
+  }
+
+  if (typeof muteLoginNotifications === "boolean") {
+    updates["notificationSettings.muteLoginNotifications"] = muteLoginNotifications;
+  }
+
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    { $set: updates },
+    { new: true }
+  ).select("notificationSettings");
+
+  if (!user) throw createHttpError.NotFound("User not found.");
+  return mapNotificationSettings(user);
+};
+
+export const setConversationMuteForUser = async (userId, conversationId, muted) => {
+  const conversation = await ConversationModel.findById(conversationId).select("users");
+  if (!conversation) throw createHttpError.NotFound("Conversation not found.");
+
+  const isParticipant = conversation.users.some(
+    (participantId) => String(participantId) === String(userId)
+  );
+
+  if (!isParticipant) {
+    throw createHttpError.Forbidden("You are not part of this conversation.");
+  }
+
+  const update = muted
+    ? { $addToSet: { "notificationSettings.mutedConversations": conversationId } }
+    : { $pull: { "notificationSettings.mutedConversations": conversationId } };
+
+  const user = await UserModel.findByIdAndUpdate(userId, update, { new: true }).select(
+    "notificationSettings"
+  );
+
+  if (!user) throw createHttpError.NotFound("User not found.");
+  return mapNotificationSettings(user);
 };

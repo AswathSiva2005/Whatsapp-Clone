@@ -146,6 +146,8 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
   const isUserBlocked = !isGroup && user.blockedUsers?.includes(targetId);
   const isPinned = pinnedConversationIds.includes(activeConversation._id);
   const isArchived = archivedConversationIds.includes(activeConversation._id);
+  const mutedConversationIds = user?.notificationSettings?.mutedConversations || [];
+  const isConversationMuted = mutedConversationIds.includes(activeConversation._id);
 
   const togglePinned = () => {
     if (!isPinned && pinnedConversationIds.length >= 3) {
@@ -157,6 +159,26 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
 
   const toggleArchive = () => {
     dispatch(toggleArchivedConversation(activeConversation._id));
+  };
+
+  const toggleConversationMute = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const { data } = await axios.patch(
+        `${resolveApiEndpoint()}/user/notification-settings/conversation/${activeConversation._id}`,
+        { muted: !isConversationMuted },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (data?.user?.notificationSettings) {
+        dispatch(setUser({ notificationSettings: data.user.notificationSettings }));
+      }
+    } catch (error) {
+      alert(error?.response?.data?.error?.message || "Failed to update mute setting.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const blockUser = async () => {
@@ -584,6 +606,13 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
             onClick={toggleArchive}
           >
             {isArchived ? "Unarchive chat" : "Archive chat"}
+          </button>
+          <button
+            className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"
+            disabled={busy}
+            onClick={toggleConversationMute}
+          >
+            {isConversationMuted ? "Unmute notifications" : "Mute notifications"}
           </button>
           <button
             className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"

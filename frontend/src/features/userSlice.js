@@ -23,6 +23,11 @@ const initialState = {
     token: "",
     blockedUsers: [],
     appLockEnabled: false,
+    notificationSettings: {
+      muteAllNotifications: false,
+      muteLoginNotifications: false,
+      mutedConversations: [],
+    },
   },
 };
 
@@ -70,6 +75,11 @@ export const userSlice = createSlice({
         token: "",
         blockedUsers: [],
         appLockEnabled: false,
+        notificationSettings: {
+          muteAllNotifications: false,
+          muteLoginNotifications: false,
+          mutedConversations: [],
+        },
       };
     },
     setUser: (state, action) => {
@@ -87,7 +97,14 @@ export const userSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.error = "";
-        state.user = action.payload.user;
+        state.user = {
+          ...initialState.user,
+          ...action.payload.user,
+          notificationSettings: {
+            ...initialState.user.notificationSettings,
+            ...(action.payload.user?.notificationSettings || {}),
+          },
+        };
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = "failed";
@@ -99,7 +116,14 @@ export const userSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.error = "";
-        state.user = action.payload.user;
+        state.user = {
+          ...initialState.user,
+          ...action.payload.user,
+          notificationSettings: {
+            ...initialState.user.notificationSettings,
+            ...(action.payload.user?.notificationSettings || {}),
+          },
+        };
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = "failed";

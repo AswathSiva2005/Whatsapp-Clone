@@ -8,6 +8,10 @@ import {
   unblockUser,
   configureAppLock,
   verifyAppLockPin,
+  getUserNotificationSettings,
+  mapNotificationSettings,
+  setConversationMuteForUser,
+  updateUserNotificationSettings,
 } from "../services/user.service.js";
 import axios from "axios";
 import FormData from "form-data";
@@ -60,6 +64,7 @@ export const updateProfile = async (req, res, next) => {
         picture: updatedUser.picture,
         status: updatedUser.status,
         appLockEnabled: Boolean(updatedUser.appLockEnabled),
+        notificationSettings: mapNotificationSettings(updatedUser),
       },
     });
   } catch (error) {
@@ -210,6 +215,7 @@ export const configureAppLockHandler = async (req, res, next) => {
       user: {
         _id: updatedUser._id,
         appLockEnabled: Boolean(updatedUser.appLockEnabled),
+        notificationSettings: mapNotificationSettings(updatedUser),
       },
     });
   } catch (error) {
@@ -222,6 +228,62 @@ export const verifyAppLockHandler = async (req, res, next) => {
     const { pin } = req.body;
     const result = await verifyAppLockPin(req.user.userId, pin);
     res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getNotificationSettingsHandler = async (req, res, next) => {
+  try {
+    const settings = await getUserNotificationSettings(req.user.userId);
+    res.status(200).json({ notificationSettings: settings });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateNotificationSettingsHandler = async (req, res, next) => {
+  try {
+    const { muteAllNotifications, muteLoginNotifications } = req.body;
+    const settings = await updateUserNotificationSettings(req.user.userId, {
+      muteAllNotifications,
+      muteLoginNotifications,
+    });
+
+    res.status(200).json({
+      message: "Notification settings updated.",
+      user: {
+        _id: req.user.userId,
+        notificationSettings: settings,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setConversationMuteHandler = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const { muted } = req.body;
+
+    if (typeof muted !== "boolean") {
+      throw createHttpError.BadRequest("muted must be a boolean.");
+    }
+
+    const settings = await setConversationMuteForUser(
+      req.user.userId,
+      conversationId,
+      muted
+    );
+
+    res.status(200).json({
+      message: muted ? "Conversation muted." : "Conversation unmuted.",
+      user: {
+        _id: req.user.userId,
+        notificationSettings: settings,
+      },
+    });
   } catch (error) {
     next(error);
   }
