@@ -13,6 +13,7 @@ import {
 import { dateHandler } from "../../../utils/date";
 import { capitalize } from "../../../utils/string";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
+import { PinIcon } from "../../../svg";
 
 function Conversation({
   convo,
@@ -21,6 +22,7 @@ function Conversation({
   typing,
   groupOnlineCount = 0,
   unreadCount = 0,
+  isPinned = false,
 }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
@@ -140,15 +142,20 @@ function Conversation({
               ? dateHandler(convo.latestMessage?.createdAt)
               : ""}
           </span>
-          <span
-            className={`min-w-[18px] h-[18px] rounded-full text-[11px] leading-[18px] text-center font-semibold ${
-              unreadCount > 0
-                ? "bg-green_1 text-white px-1"
-                : "bg-transparent text-transparent px-0"
-            }`}
-          >
-            {unreadCount > 99 ? "99+" : unreadCount || "0"}
-          </span>
+          <div className="flex items-center gap-1">
+            {isPinned && (
+              <PinIcon className="dark:fill-dark_svg_2" />
+            )}
+            <span
+              className={`min-w-[18px] h-[18px] rounded-full text-[11px] leading-[18px] text-center font-semibold ${
+                unreadCount > 0
+                  ? "bg-green_1 text-white px-1"
+                  : "bg-transparent text-transparent px-0"
+              }`}
+            >
+              {unreadCount > 99 ? "99+" : unreadCount || "0"}
+            </span>
+          </div>
         </div>
       </div>
       {/*Border*/}

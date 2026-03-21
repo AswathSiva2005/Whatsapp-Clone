@@ -1,5 +1,6 @@
 import createHttpError from "http-errors";
 import { UserModel } from "../models/index.js";
+import bcrypt from "bcrypt";
 
 export const findUser = async (userId) => {
   const user = await UserModel.findById(userId);
@@ -70,4 +71,64 @@ export const unblockUser = async (userId, blockedUserId) => {
   );
   if (!user) throw createHttpError.NotFound("User not found.");
   return user;
+};
+
+export const configureAppLock = async (userId, values) => {
+  const { enabled, pin, currentPin } = values;
+  const updates = {};
+  const user = await UserModel.findById(userId).select("appLockEnabled appLockPinHash");
+  if (!user) throw createHttpError.NotFound("User not found.");
+
+  if (enabled === false) {
+    updates.appLockEnabled = false;
+    updates.appLockPinHash = "";
+  } else {
+    if (!/^\d{4}$/.test(String(pin || ""))) {
+      throw createHttpError.BadRequest("PIN must be exactly 4 digits.");
+    }
+
+    if (user.appLockEnabled) {
+      if (!/^\d{4}$/.test(String(currentPin || ""))) {
+        throw createHttpError.BadRequest("Current PIN is required to change PIN.");
+      }
+
+      const currentPinValid = await bcrypt.compare(
+        String(currentPin),
+        user.appLockPinHash || ""
+      );
+      if (!currentPinValid) {
+        throw createHttpError.Unauthorized("Current PIN is incorrect.");
+      }
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const pinHash = await bcrypt.hash(String(pin), salt);
+
+    updates.appLockEnabled = true;
+    updates.appLockPinHash = pinHash;
+  }
+
+  const updatedUser = await UserModel.findByIdAndUpdate(userId, { $set: updates }, { new: true });
+  if (!updatedUser) throw createHttpError.NotFound("User not found.");
+  return updatedUser;
+};
+
+export const verifyAppLockPin = async (userId, pin) => {
+  const user = await UserModel.findById(userId).select("appLockEnabled appLockPinHash");
+  if (!user) throw createHttpError.NotFound("User not found.");
+
+  if (!user.appLockEnabled) {
+    return { valid: true, appLockEnabled: false };
+  }
+
+  if (!/^\d{4}$/.test(String(pin || ""))) {
+    throw createHttpError.BadRequest("PIN must be exactly 4 digits.");
+  }
+
+  const valid = await bcrypt.compare(String(pin), user.appLockPinHash || "");
+  if (!valid) {
+    throw createHttpError.Unauthorized("Invalid app lock PIN.");
+  }
+
+  return { valid: true, appLockEnabled: true };
 };

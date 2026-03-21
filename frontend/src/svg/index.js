@@ -35,6 +35,8 @@ import SpeakerIcon from "./Speaker";
 import DialIcon from "./Dial";
 import VideoDialIcon from "./VideoDial";
 import ValidIcon from "./Valid";
+import ArchiveIcon from "./Archive";
+import PinIcon from "./Pin";
 export {
   CommunityIcon,
   StoryIcon,
@@ -73,4 +75,6 @@ export {
   DialIcon,
   VideoDialIcon,
   ValidIcon,
+  ArchiveIcon,
+  PinIcon,
 };

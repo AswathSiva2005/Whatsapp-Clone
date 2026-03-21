@@ -47,6 +47,7 @@ export const register = async (req, res, next) => {
         picture: newUser.picture,
         status: newUser.status,
         blockedUsers: newUser.blockedUsers || [],
+        appLockEnabled: Boolean(newUser.appLockEnabled),
         token: access_token,
       },
     });
@@ -85,6 +86,7 @@ export const login = async (req, res, next) => {
         picture: user.picture,
         status: user.status,
         blockedUsers: user.blockedUsers || [],
+        appLockEnabled: Boolean(user.appLockEnabled),
         token: access_token,
       },
     });
@@ -124,6 +126,7 @@ export const refreshToken = async (req, res, next) => {
         email: user.email,
         picture: user.picture,
         status: user.status,
+        appLockEnabled: Boolean(user.appLockEnabled),
         token: access_token,
       },
     });

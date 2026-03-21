@@ -22,6 +22,7 @@ const initialState = {
     status: "",
     token: "",
     blockedUsers: [],
+    appLockEnabled: false,
   },
 };
 
@@ -67,6 +68,8 @@ export const userSlice = createSlice({
         picture: "",
         status: "",
         token: "",
+        blockedUsers: [],
+        appLockEnabled: false,
       };
     },
     setUser: (state, action) => {

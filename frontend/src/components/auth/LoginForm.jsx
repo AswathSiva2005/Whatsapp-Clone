@@ -20,6 +20,9 @@ export default function RegisterForm() {
   const onSubmit = async (values) => {
     let res = await dispatch(loginUser({ ...values }));
     if (res?.payload?.user) {
+      if (res.payload.user._id) {
+        sessionStorage.removeItem(`appLockUnlocked:${res.payload.user._id}`);
+      }
       navigate("/");
     }
   };

@@ -4,6 +4,7 @@ import { SidebarHeader } from "./header";
 import { Search } from "./search";
 import { SearchResults } from "./search";
 import {
+  ArchiveIcon,
   CallIcon,
   ChatIcon,
   CommunityIcon,
@@ -15,7 +16,10 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getTwoLetterAvatarUrl } from "../../utils/avatar";
 import StatusPanel from "./header/StatusPanel";
-import { setFavoriteConversationIds } from "../../features/chatSlice";
+import {
+  setArchivedConversationIds,
+  setPinnedConversationIds,
+} from "../../features/chatSlice";
 import CallHistoryPanel from "./calls/CallHistoryPanel";
 
 const resolveApiEndpoint = () => {
@@ -33,7 +37,8 @@ export default function Sidebar({ onlineUsers, typing }) {
   const { user } = useSelector((state) => state.user);
   const {
     unreadByConversation,
-    favoriteConversationIds,
+    pinnedConversationIds,
+    archivedConversationIds,
     conversations,
     activeConversation,
   } = useSelector((state) => state.chat);
@@ -47,22 +52,32 @@ export default function Sidebar({ onlineUsers, typing }) {
     return count + (unreadCount > 0 ? 1 : 0);
   }, 0);
 
-  const favoritesCount = favoriteConversationIds.length;
+  const pinnedCount = pinnedConversationIds.length;
+  const archivedCount = archivedConversationIds.length;
 
   useEffect(() => {
-    const key = `favorites:${user._id}`;
+    const pinnedKey = `pinned:${user._id}`;
+    const archivedKey = `archived:${user._id}`;
     try {
-      const stored = JSON.parse(localStorage.getItem(key) || "[]");
-      dispatch(setFavoriteConversationIds(Array.isArray(stored) ? stored : []));
+      const storedPinned = JSON.parse(localStorage.getItem(pinnedKey) || "[]");
+      const storedArchived = JSON.parse(localStorage.getItem(archivedKey) || "[]");
+      dispatch(setPinnedConversationIds(Array.isArray(storedPinned) ? storedPinned : []));
+      dispatch(
+        setArchivedConversationIds(Array.isArray(storedArchived) ? storedArchived : [])
+      );
     } catch {
-      dispatch(setFavoriteConversationIds([]));
+      dispatch(setPinnedConversationIds([]));
+      dispatch(setArchivedConversationIds([]));
     }
   }, [dispatch, user._id]);
 
   useEffect(() => {
-    const key = `favorites:${user._id}`;
-    localStorage.setItem(key, JSON.stringify(favoriteConversationIds));
-  }, [favoriteConversationIds, user._id]);
+    localStorage.setItem(`pinned:${user._id}`, JSON.stringify(pinnedConversationIds));
+  }, [pinnedConversationIds, user._id]);
+
+  useEffect(() => {
+    localStorage.setItem(`archived:${user._id}`, JSON.stringify(archivedConversationIds));
+  }, [archivedConversationIds, user._id]);
 
   const handleCallDeleted = (deletedCallId) => {
     setCallHistory((prevHistory) =>
@@ -124,6 +139,15 @@ export default function Sidebar({ onlineUsers, typing }) {
           >
             <CallIcon className="dark:fill-dark_svg_2" />
           </button>
+          <button
+            className={`w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1 ${
+              activeView === "archived" ? "bg-[#1f2c34]" : ""
+            }`}
+            onClick={() => setActiveView("archived")}
+            title="Archived chats"
+          >
+            <ArchiveIcon className="dark:fill-dark_svg_2" />
+          </button>
           <button className="w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1">
             <NotificationIcon className="dark:fill-dark_svg_2" />
           </button>
@@ -182,7 +206,8 @@ export default function Sidebar({ onlineUsers, typing }) {
               activeView={activeView}
               setActiveView={setActiveView}
               unreadChatsCount={unreadChatsCount}
-              favoritesCount={favoritesCount}
+              pinnedCount={pinnedCount}
+              archivedCount={archivedCount}
             />
             {searchResults.length > 0 ? (
               <SearchResults
@@ -194,7 +219,8 @@ export default function Sidebar({ onlineUsers, typing }) {
                 onlineUsers={onlineUsers}
                 typing={typing}
                 activeView={activeView}
-                favoriteConversationIds={favoriteConversationIds}
+                pinnedConversationIds={pinnedConversationIds}
+                archivedConversationIds={archivedConversationIds}
                 unreadByConversation={unreadByConversation}
                 activeConversationId={activeConversation?._id}
               />

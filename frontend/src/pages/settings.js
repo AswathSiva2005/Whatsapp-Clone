@@ -50,6 +50,11 @@ const SettingsPage = () => {
       notificationsPreview: true,
     };
   });
+  const [appLockEnabled, setAppLockEnabled] = useState(Boolean(user.appLockEnabled));
+  const [currentAppLockPin, setCurrentAppLockPin] = useState("");
+  const [appLockPin, setAppLockPin] = useState("");
+  const [appLockConfirmPin, setAppLockConfirmPin] = useState("");
+  const [appLockSaving, setAppLockSaving] = useState(false);
 
   const savePreferences = (nextPrefs) => {
     setPreferences(nextPrefs);
@@ -75,6 +80,72 @@ const SettingsPage = () => {
       return (total / 1024).toFixed(1);
     } catch {
       return "0.0";
+    }
+  };
+
+  const saveAppLock = async () => {
+    if (appLockEnabled && !/^\d{4}$/.test(currentAppLockPin)) {
+      setError("Current PIN is required to change PIN.");
+      return;
+    }
+
+    if (!/^\d{4}$/.test(appLockPin)) {
+      setError("App lock PIN must be exactly 4 digits.");
+      return;
+    }
+
+    if (appLockPin !== appLockConfirmPin) {
+      setError("PIN and confirm PIN do not match.");
+      return;
+    }
+
+    setAppLockSaving(true);
+    setError("");
+    try {
+      const { data } = await axios.patch(
+        `${resolveApiEndpoint()}/user/app-lock`,
+        {
+          enabled: true,
+          pin: appLockPin,
+          currentPin: appLockEnabled ? currentAppLockPin : undefined,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setAppLockEnabled(Boolean(data?.user?.appLockEnabled));
+      setCurrentAppLockPin("");
+      setAppLockPin("");
+      setAppLockConfirmPin("");
+      dispatch(setUser({ appLockEnabled: Boolean(data?.user?.appLockEnabled) }));
+      setError(appLockEnabled ? "App PIN changed." : "App lock enabled.");
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || "Failed to save app lock.");
+    } finally {
+      setAppLockSaving(false);
+    }
+  };
+
+  const disableAppLock = async () => {
+    setAppLockSaving(true);
+    setError("");
+    try {
+      const { data } = await axios.patch(
+        `${resolveApiEndpoint()}/user/app-lock`,
+        { enabled: false },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setAppLockEnabled(Boolean(data?.user?.appLockEnabled));
+      setCurrentAppLockPin("");
+      setAppLockPin("");
+      setAppLockConfirmPin("");
+      dispatch(setUser({ appLockEnabled: Boolean(data?.user?.appLockEnabled) }));
+      sessionStorage.removeItem(`appLockUnlocked:${user._id}`);
+      setError("App lock disabled.");
+    } catch (err) {
+      setError(err?.response?.data?.error?.message || "Failed to disable app lock.");
+    } finally {
+      setAppLockSaving(false);
     }
   };
 
@@ -453,6 +524,65 @@ const SettingsPage = () => {
                       onChange={() => togglePreference("privacyTwoStep")}
                     />
                   </label>
+                  <div className="border-t dark:border-dark_border_2 pt-3 mt-2 space-y-2">
+                    <p className="text-sm dark:text-dark_text_1 font-medium">App lock (4-digit PIN)</p>
+                    <p className="text-xs dark:text-dark_text_2">
+                      Require PIN every time you login.
+                    </p>
+                    {appLockEnabled && (
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={currentAppLockPin}
+                        onChange={(e) =>
+                          setCurrentAppLockPin(e.target.value.replace(/\D/g, ""))
+                        }
+                        placeholder="Current PIN"
+                        className="w-full rounded-md bg-[#1f2c33] px-3 py-2 text-sm dark:text-dark_text_1 outline-none"
+                      />
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={appLockPin}
+                        onChange={(e) => setAppLockPin(e.target.value.replace(/\D/g, ""))}
+                        placeholder={appLockEnabled ? "New PIN" : "PIN"}
+                        className="rounded-md bg-[#1f2c33] px-3 py-2 text-sm dark:text-dark_text_1 outline-none"
+                      />
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={appLockConfirmPin}
+                        onChange={(e) =>
+                          setAppLockConfirmPin(e.target.value.replace(/\D/g, ""))
+                        }
+                        placeholder="Confirm PIN"
+                        className="rounded-md bg-[#1f2c33] px-3 py-2 text-sm dark:text-dark_text_1 outline-none"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="px-3 py-2 rounded-md text-sm bg-green_1 text-white disabled:opacity-50"
+                        onClick={saveAppLock}
+                        disabled={appLockSaving}
+                      >
+                        {appLockEnabled ? "Change app PIN" : "Enable app lock"}
+                      </button>
+                      {appLockEnabled && (
+                        <button
+                          className="px-3 py-2 rounded-md text-sm bg-[#1f2c33] dark:text-dark_text_1 disabled:opacity-50"
+                          onClick={disableAppLock}
+                          disabled={appLockSaving}
+                        >
+                          Turn off
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -495,11 +625,12 @@ const SettingsPage = () => {
                   <button
                     className="px-3 py-2 rounded-md text-sm bg-[#1f2c33] dark:text-dark_text_1"
                     onClick={() => {
-                      localStorage.removeItem(`favorites:${user._id}`);
-                      setError("Cleared favourites cache.");
+                      localStorage.removeItem(`pinned:${user._id}`);
+                      localStorage.removeItem(`archived:${user._id}`);
+                      setError("Cleared pinned and archived cache.");
                     }}
                   >
-                    Clear favourites cache
+                    Clear chat layout cache
                   </button>
                 </div>
               )}

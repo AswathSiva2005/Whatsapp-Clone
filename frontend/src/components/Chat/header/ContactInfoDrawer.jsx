@@ -14,7 +14,8 @@ import {
   removeMemberFromGroupConversation,
   setDisappearingMessagesSetting,
   setActiveConversation,
-  toggleFavoriteConversation,
+  toggleArchivedConversation,
+  togglePinnedConversation,
   updateGroupConversation,
   upsertConversationFromServer,
 } from "../../../features/chatSlice";
@@ -32,7 +33,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { token } = user;
-  const { favoriteConversationIds } = useSelector((state) => state.chat);
+  const { pinnedConversationIds, archivedConversationIds } = useSelector((state) => state.chat);
   const [busy, setBusy] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
@@ -143,10 +144,19 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
 
   // Check if user is blocked
   const isUserBlocked = !isGroup && user.blockedUsers?.includes(targetId);
-  const isFavorite = favoriteConversationIds.includes(activeConversation._id);
+  const isPinned = pinnedConversationIds.includes(activeConversation._id);
+  const isArchived = archivedConversationIds.includes(activeConversation._id);
 
-  const toggleFavorite = () => {
-    dispatch(toggleFavoriteConversation(activeConversation._id));
+  const togglePinned = () => {
+    if (!isPinned && pinnedConversationIds.length >= 3) {
+      alert("You can pin up to 3 chats only.");
+      return;
+    }
+    dispatch(togglePinnedConversation(activeConversation._id));
+  };
+
+  const toggleArchive = () => {
+    dispatch(toggleArchivedConversation(activeConversation._id));
   };
 
   const blockUser = async () => {
@@ -564,9 +574,16 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
           <button
             className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"
             disabled={busy}
-            onClick={toggleFavorite}
+            onClick={togglePinned}
           >
-            {isFavorite ? "Remove from favourites" : "Add to favourites"}
+            {isPinned ? "Unpin chat" : "Pin chat"}
+          </button>
+          <button
+            className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"
+            disabled={busy}
+            onClick={toggleArchive}
+          >
+            {isArchived ? "Unarchive chat" : "Archive chat"}
           </button>
           <button
             className="w-full text-left px-4 sm:px-5 py-3 hover:dark:bg-dark_bg_3 dark:text-dark_text_1 disabled:opacity-50 text-sm sm:text-base"

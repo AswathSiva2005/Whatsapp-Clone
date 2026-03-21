@@ -6,7 +6,8 @@ export default function Conversations({
   onlineUsers,
   typing,
   activeView = "all",
-  favoriteConversationIds = [],
+  pinnedConversationIds = [],
+  archivedConversationIds = [],
   unreadByConversation = {},
 }) {
   const { conversations, activeConversation } = useSelector(
@@ -14,7 +15,7 @@ export default function Conversations({
   );
   const { user } = useSelector((state) => state.user);
 
-  const visibleConversations = (conversations || [])
+  const baseConversations = (conversations || [])
     .filter(
       (c) =>
         c.latestMessage ||
@@ -22,9 +23,18 @@ export default function Conversations({
         c.isGroup === true
     )
     .filter((conversation) => {
-      if (activeView === "favorites") {
-        return favoriteConversationIds.includes(conversation._id);
+      if (activeView === "archived") {
+        return archivedConversationIds.includes(conversation._id);
       }
+
+      if (archivedConversationIds.includes(conversation._id)) {
+        return false;
+      }
+
+      if (activeView === "pinned") {
+        return pinnedConversationIds.includes(conversation._id);
+      }
+
       if (activeView === "unread") {
         return (unreadByConversation[conversation._id] || 0) > 0;
       }
@@ -34,9 +44,23 @@ export default function Conversations({
       return true;
     });
 
+  const pinnedSet = new Set(pinnedConversationIds);
+  const pinnedVisible = baseConversations.filter((c) => pinnedSet.has(c._id));
+  const unpinnedVisible = baseConversations.filter((c) => !pinnedSet.has(c._id));
+
+  const shouldGroupByPinned = activeView === "all";
+  const visibleConversations = shouldGroupByPinned
+    ? [...pinnedVisible, ...unpinnedVisible]
+    : baseConversations;
+
   return (
     <div className="convos scrollbar h-[calc(100vh-126px)]">
       <ul>
+        {shouldGroupByPinned && pinnedVisible.length > 0 && (
+          <li className="px-4 pt-3 pb-1 text-[11px] uppercase tracking-wide text-green_1 font-semibold">
+            Pinned
+          </li>
+        )}
         {visibleConversations.map((convo) => {
           let check = checkOnlineStatus(onlineUsers, user, convo.users);
           const groupOnlineCount = convo.isGroup
@@ -56,6 +80,7 @@ export default function Conversations({
               typing={typing}
               groupOnlineCount={groupOnlineCount}
               unreadCount={unreadByConversation[convo._id] || 0}
+              isPinned={pinnedSet.has(convo._id)}
             />
           );
         })}

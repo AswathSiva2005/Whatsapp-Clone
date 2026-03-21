@@ -20,7 +20,8 @@ const initialState = {
   notifications: [],
   files: [],
   unreadByConversation: {},
-  favoriteConversationIds: [],
+  pinnedConversationIds: [],
+  archivedConversationIds: [],
 };
 
 //functions
@@ -278,18 +279,32 @@ export const chatSlice = createSlice({
       const conversationId = action.payload;
       state.unreadByConversation[conversationId] = 0;
     },
-    setFavoriteConversationIds: (state, action) => {
-      state.favoriteConversationIds = action.payload || [];
+    setPinnedConversationIds: (state, action) => {
+      state.pinnedConversationIds = action.payload || [];
     },
-    toggleFavoriteConversation: (state, action) => {
+    togglePinnedConversation: (state, action) => {
       const conversationId = action.payload;
-      const exists = state.favoriteConversationIds.includes(conversationId);
+      const exists = state.pinnedConversationIds.includes(conversationId);
       if (exists) {
-        state.favoriteConversationIds = state.favoriteConversationIds.filter(
+        state.pinnedConversationIds = state.pinnedConversationIds.filter(
           (id) => id !== conversationId
         );
       } else {
-        state.favoriteConversationIds.push(conversationId);
+        state.pinnedConversationIds.push(conversationId);
+      }
+    },
+    setArchivedConversationIds: (state, action) => {
+      state.archivedConversationIds = action.payload || [];
+    },
+    toggleArchivedConversation: (state, action) => {
+      const conversationId = action.payload;
+      const exists = state.archivedConversationIds.includes(conversationId);
+      if (exists) {
+        state.archivedConversationIds = state.archivedConversationIds.filter(
+          (id) => id !== conversationId
+        );
+      } else {
+        state.archivedConversationIds.push(conversationId);
       }
     },
     addFiles: (state, action) => {
@@ -523,8 +538,10 @@ export const {
   removeMessageById,
   setUnreadCountForConversation,
   clearUnreadForConversation,
-  setFavoriteConversationIds,
-  toggleFavoriteConversation,
+  setPinnedConversationIds,
+  togglePinnedConversation,
+  setArchivedConversationIds,
+  toggleArchivedConversation,
   upsertConversationFromServer,
 } = chatSlice.actions;
 

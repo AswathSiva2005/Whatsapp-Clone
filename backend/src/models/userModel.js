@@ -51,6 +51,14 @@ const userSchema = mongoose.Schema(
       ref: "UserModel",
       default: [],
     },
+    appLockEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    appLockPinHash: {
+      type: String,
+      default: "",
+    },
   },
   {
     collection: "users",

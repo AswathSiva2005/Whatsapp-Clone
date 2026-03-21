@@ -1,6 +1,14 @@
 import createHttpError from "http-errors";
 import logger from "../configs/logger.config.js";
-import { searchUsers as searchUsersService, searchByPhone, updateUserProfile, blockUser, unblockUser } from "../services/user.service.js";
+import {
+  searchUsers as searchUsersService,
+  searchByPhone,
+  updateUserProfile,
+  blockUser,
+  unblockUser,
+  configureAppLock,
+  verifyAppLockPin,
+} from "../services/user.service.js";
 import axios from "axios";
 import FormData from "form-data";
 import fs from "fs";
@@ -51,6 +59,7 @@ export const updateProfile = async (req, res, next) => {
         phone: updatedUser.phone,
         picture: updatedUser.picture,
         status: updatedUser.status,
+        appLockEnabled: Boolean(updatedUser.appLockEnabled),
       },
     });
   } catch (error) {
@@ -181,6 +190,39 @@ export const uploadProfilePicture = async (req, res, next) => {
     }
   } catch (error) {
     logger.error("Upload error:", error.message);
+    next(error);
+  }
+};
+
+export const configureAppLockHandler = async (req, res, next) => {
+  try {
+    const { enabled, pin, currentPin } = req.body;
+    const updatedUser = await configureAppLock(req.user.userId, {
+      enabled,
+      pin,
+      currentPin,
+    });
+
+    res.status(200).json({
+      message: updatedUser.appLockEnabled
+        ? "App lock updated successfully."
+        : "App lock disabled successfully.",
+      user: {
+        _id: updatedUser._id,
+        appLockEnabled: Boolean(updatedUser.appLockEnabled),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyAppLockHandler = async (req, res, next) => {
+  try {
+    const { pin } = req.body;
+    const result = await verifyAppLockPin(req.user.userId, pin);
+    res.status(200).json(result);
+  } catch (error) {
     next(error);
   }
 };

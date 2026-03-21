@@ -16,6 +16,7 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import SettingsPage from "./pages/settings";
+import UnlockPage from "./pages/unlock";
 
 const resolveApiEndpoint = () => {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
@@ -82,6 +83,16 @@ function App() {
   const { user } = useSelector((state) => state.user);
   const { token } = user;
   const [tokenVerified, setTokenVerified] = useState(false);
+  const [isAppLockUnlocked, setIsAppLockUnlocked] = useState(false);
+
+  useEffect(() => {
+    if (!token || !user?._id) {
+      setIsAppLockUnlocked(false);
+      return;
+    }
+    const unlocked = sessionStorage.getItem(`appLockUnlocked:${user._id}`) === "true";
+    setIsAppLockUnlocked(unlocked);
+  }, [token, user?._id]);
 
   // Verify token on app startup
   useEffect(() => {
@@ -140,7 +151,15 @@ function App() {
               exact
               path="/"
               element={
-                token ? <Home socket={socket} /> : <Navigate to="/login" />
+                token ? (
+                  user?.appLockEnabled && !isAppLockUnlocked ? (
+                    <Navigate to="/unlock" />
+                  ) : (
+                    <Home socket={socket} />
+                  )
+                ) : (
+                  <Navigate to="/login" />
+                )
               }
             />
             <Route
@@ -157,7 +176,30 @@ function App() {
               exact
               path="/settings"
               element={
-                token ? <SettingsPage /> : <Navigate to="/login" />
+                token ? (
+                  user?.appLockEnabled && !isAppLockUnlocked ? (
+                    <Navigate to="/unlock" />
+                  ) : (
+                    <SettingsPage />
+                  )
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+            <Route
+              exact
+              path="/unlock"
+              element={
+                token ? (
+                  user?.appLockEnabled ? (
+                    <UnlockPage onUnlock={() => setIsAppLockUnlocked(true)} />
+                  ) : (
+                    <Navigate to="/" />
+                  )
+                ) : (
+                  <Navigate to="/login" />
+                )
               }
             />
           </Routes>
