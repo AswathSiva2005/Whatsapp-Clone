@@ -53,12 +53,15 @@ export default function Call({
                 <video
                   ref={userVideo}
                   playsInline
-                  muted
                   autoPlay
                   className={toggle ? "SmallVideoCall" : "largeVideoCall"}
                   onClick={() => setToggle((prev) => !prev)}
                 ></video>
               </div>
+            ) : null}
+
+            {callType === "audio" && callAccepted && !callEnded ? (
+              <audio ref={userVideo} autoPlay></audio>
             ) : null}
             {/*my video*/}
             {callType === "video" && stream ? (

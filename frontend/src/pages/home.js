@@ -173,7 +173,7 @@ function Home({ socket }) {
       socket.emit("call user", {
         userToCall: getConversationId(user, activeConversation.users),
         signal: data,
-        from: socketId,
+        from: socket.id || socketId,
         name: user.name,
         picture: user.picture,
         callType,

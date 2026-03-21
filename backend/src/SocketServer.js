@@ -5,14 +5,12 @@ export default function (socket, io) {
   //user joins or opens the application
   socket.on("join", (user) => {
     socket.join(user);
-    //add joined user to online users
-    if (!onlineUsers.some((u) => u.userId === user)) {
-      onlineUsers.push({ userId: user, socketId: socket.id });
-    }
+    // allow multi-login sessions by storing each active socket per user
+    onlineUsers.push({ userId: user, socketId: socket.id });
     //send online users to frontend
     io.emit("get-online-users", onlineUsers);
     //send socket id
-    io.emit("setup socket", socket.id);
+    socket.emit("setup socket", socket.id);
   });
 
   //socket disconnect
@@ -93,17 +91,22 @@ export default function (socket, io) {
   //call
   //---call user
   socket.on("call user", (data) => {
-    let userId = data.userToCall;
-    let userSocketId = onlineUsers.find((user) => user.userId == userId);
-    if (!userSocketId?.socketId) return;
+    const userId = data.userToCall;
+    const recipientSockets = onlineUsers
+      .filter((user) => String(user.userId) === String(userId))
+      .map((user) => user.socketId);
 
-    io.to(userSocketId.socketId).emit("call user", {
-      signal: data.signal,
-      from: data.from,
-      name: data.name,
-      picture: data.picture,
-      callType: data.callType || "video",
-      callId: data.callId || null,
+    if (recipientSockets.length === 0) return;
+
+    recipientSockets.forEach((socketId) => {
+      io.to(socketId).emit("call user", {
+        signal: data.signal,
+        from: data.from,
+        name: data.name,
+        picture: data.picture,
+        callType: data.callType || "video",
+        callId: data.callId || null,
+      });
     });
   });
   //---answer call
