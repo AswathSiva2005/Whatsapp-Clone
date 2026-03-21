@@ -65,8 +65,17 @@ export default function RegisterForm() {
       !invalidSecrets.includes(cloud_secret);
 
     if (!hasValidConfig) {
-      console.warn("Cloudinary not configured. Skipping picture upload.");
-      return null; // Picture is optional
+      try {
+        let localFormData = new FormData();
+        localFormData.append("file", picture);
+        const { data } = await axios.post(
+          `${process.env.REACT_APP_API_ENDPOINT}/auth/upload`,
+          localFormData
+        );
+        return data;
+      } catch {
+        return null;
+      }
     }
 
     try {

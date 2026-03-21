@@ -11,11 +11,13 @@ import {
   StoryIcon,
 } from "../../svg";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { getTwoLetterAvatarUrl } from "../../utils/avatar";
 import StatusPanel from "./header/StatusPanel";
 import { setFavoriteConversationIds } from "../../features/chatSlice";
 
 export default function Sidebar({ onlineUsers, typing }) {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const {
@@ -86,7 +88,11 @@ export default function Sidebar({ onlineUsers, typing }) {
             <CommunityIcon className="dark:fill-dark_svg_2" />
           </button>
         </div>
-        <button className="w-10 h-10 rounded-full overflow-hidden">
+        <button
+          className="w-10 h-10 rounded-full overflow-hidden"
+          onClick={() => navigate("/settings")}
+          title="Profile settings"
+        >
           <img
             src={user.picture || getTwoLetterAvatarUrl(user.name)}
             alt={user.name}

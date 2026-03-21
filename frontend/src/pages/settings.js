@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import Cropper from "react-easy-crop";
 import { setUser } from "../features/userSlice";
 import axios from "axios";
 import { ReturnIcon } from "../svg";
@@ -19,6 +20,56 @@ const SettingsPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showCropper, setShowCropper] = useState(false);
+  const [tempImage, setTempImage] = useState("");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [pendingPictureName, setPendingPictureName] = useState("profile-picture.jpg");
+  const [activeSettingsSection, setActiveSettingsSection] = useState("privacy");
+  const [preferences, setPreferences] = useState(() => {
+    try {
+      const raw = localStorage.getItem(`settings:${user._id}`);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // no-op
+    }
+    return {
+      privacyLastSeen: true,
+      privacyProfilePhoto: true,
+      privacyTwoStep: false,
+      notificationsMessage: true,
+      notificationsDesktop: true,
+      notificationsPreview: true,
+    };
+  });
+
+  const savePreferences = (nextPrefs) => {
+    setPreferences(nextPrefs);
+    localStorage.setItem(`settings:${user._id}`, JSON.stringify(nextPrefs));
+  };
+
+  const togglePreference = (key) => {
+    const nextPrefs = {
+      ...preferences,
+      [key]: !preferences[key],
+    };
+    savePreferences(nextPrefs);
+  };
+
+  const getLocalStorageUsageKb = () => {
+    try {
+      let total = 0;
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key) || "";
+        total += key.length + value.length;
+      }
+      return (total / 1024).toFixed(1);
+    } catch {
+      return "0.0";
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -28,15 +79,7 @@ const SettingsPage = () => {
     }));
   };
 
-  const handlePictureUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image too large. Please choose an image under 5MB.");
-      return;
-    }
-
+  const handlePictureUpload = async (file) => {
     const formDataToSend = new FormData();
     formDataToSend.append("file", file);
 
@@ -79,6 +122,89 @@ const SettingsPage = () => {
       } else {
         setError(err?.response?.data?.error?.message || "Failed to upload picture.");
       }
+    }
+  };
+
+  const handleSelectPicture = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose a valid image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image too large. Please choose an image under 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setTempImage(evt.target?.result || "");
+      setPendingPictureName(file.name || "profile-picture.jpg");
+      setShowCropper(true);
+      setError("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = (_, areaPixels) => {
+    setCroppedAreaPixels(areaPixels);
+  };
+
+  const createImage = (url) =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener("load", () => resolve(image));
+      image.addEventListener("error", (err) => reject(err));
+      image.setAttribute("crossOrigin", "anonymous");
+      image.src = url;
+    });
+
+  const getCroppedBlob = async () => {
+    const image = await createImage(tempImage);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = croppedAreaPixels.width;
+    canvas.height = croppedAreaPixels.height;
+
+    ctx.drawImage(
+      image,
+      croppedAreaPixels.x,
+      croppedAreaPixels.y,
+      croppedAreaPixels.width,
+      croppedAreaPixels.height,
+      0,
+      0,
+      croppedAreaPixels.width,
+      croppedAreaPixels.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
+    });
+  };
+
+  const confirmCropAndUpload = async () => {
+    if (!croppedAreaPixels || !tempImage) return;
+    setLoading(true);
+    try {
+      const blob = await getCroppedBlob();
+      if (!blob) throw new Error("Crop failed");
+
+      const croppedFile = new File([blob], pendingPictureName, {
+        type: "image/jpeg",
+      });
+
+      await handlePictureUpload(croppedFile);
+      setShowCropper(false);
+      setTempImage("");
+    } catch {
+      setError("Failed to crop image. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -178,7 +304,7 @@ const SettingsPage = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handlePictureUpload}
+                      onChange={handleSelectPicture}
                       className="hidden"
                     />
                   </label>
@@ -256,15 +382,191 @@ const SettingsPage = () => {
 
             <div className="dark:bg-dark_bg_1 rounded-lg p-4 border dark:border-dark_border_2 mt-6">
               <h3 className="text-green_1 text-sm font-medium mb-3">Account Settings</h3>
-              <ul className="space-y-2 text-sm dark:text-dark_text_2">
-                <li className="hover:dark:text-dark_text_1 cursor-pointer">🔒 Privacy & Security</li>
-                <li className="hover:dark:text-dark_text_1 cursor-pointer">🔔 Notifications</li>
-                <li className="hover:dark:text-dark_text_1 cursor-pointer">📱 Storage & Data</li>
-                <li className="hover:dark:text-dark_text_1 cursor-pointer">❓ Help & Support</li>
-              </ul>
+              <div className="space-y-2 text-sm dark:text-dark_text_2">
+                <button
+                  className={`w-full text-left hover:dark:text-dark_text_1 ${
+                    activeSettingsSection === "privacy" ? "text-green_1" : ""
+                  }`}
+                  onClick={() => setActiveSettingsSection("privacy")}
+                >
+                  🔒 Privacy & Security
+                </button>
+                <button
+                  className={`w-full text-left hover:dark:text-dark_text_1 ${
+                    activeSettingsSection === "notifications" ? "text-green_1" : ""
+                  }`}
+                  onClick={() => setActiveSettingsSection("notifications")}
+                >
+                  🔔 Notifications
+                </button>
+                <button
+                  className={`w-full text-left hover:dark:text-dark_text_1 ${
+                    activeSettingsSection === "storage" ? "text-green_1" : ""
+                  }`}
+                  onClick={() => setActiveSettingsSection("storage")}
+                >
+                  📱 Storage & Data
+                </button>
+                <button
+                  className={`w-full text-left hover:dark:text-dark_text_1 ${
+                    activeSettingsSection === "help" ? "text-green_1" : ""
+                  }`}
+                  onClick={() => setActiveSettingsSection("help")}
+                >
+                  ❓ Help & Support
+                </button>
+              </div>
+            </div>
+
+            <div className="dark:bg-dark_bg_1 rounded-lg p-4 border dark:border-dark_border_2">
+              {activeSettingsSection === "privacy" && (
+                <div className="space-y-3">
+                  <h4 className="text-sm text-green_1 font-medium">Privacy & Security</h4>
+                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
+                    Last seen visibility
+                    <input
+                      type="checkbox"
+                      checked={preferences.privacyLastSeen}
+                      onChange={() => togglePreference("privacyLastSeen")}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
+                    Profile photo visibility
+                    <input
+                      type="checkbox"
+                      checked={preferences.privacyProfilePhoto}
+                      onChange={() => togglePreference("privacyProfilePhoto")}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
+                    Two-step verification
+                    <input
+                      type="checkbox"
+                      checked={preferences.privacyTwoStep}
+                      onChange={() => togglePreference("privacyTwoStep")}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {activeSettingsSection === "notifications" && (
+                <div className="space-y-3">
+                  <h4 className="text-sm text-green_1 font-medium">Notifications</h4>
+                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
+                    Message notifications
+                    <input
+                      type="checkbox"
+                      checked={preferences.notificationsMessage}
+                      onChange={() => togglePreference("notificationsMessage")}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
+                    Desktop alerts
+                    <input
+                      type="checkbox"
+                      checked={preferences.notificationsDesktop}
+                      onChange={() => togglePreference("notificationsDesktop")}
+                    />
+                  </label>
+                  <label className="flex items-center justify-between text-sm dark:text-dark_text_1">
+                    Show preview text
+                    <input
+                      type="checkbox"
+                      checked={preferences.notificationsPreview}
+                      onChange={() => togglePreference("notificationsPreview")}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {activeSettingsSection === "storage" && (
+                <div className="space-y-3">
+                  <h4 className="text-sm text-green_1 font-medium">Storage & Data</h4>
+                  <p className="text-sm dark:text-dark_text_1">
+                    Approx local storage usage: {getLocalStorageUsageKb()} KB
+                  </p>
+                  <button
+                    className="px-3 py-2 rounded-md text-sm bg-[#1f2c33] dark:text-dark_text_1"
+                    onClick={() => {
+                      localStorage.removeItem(`favorites:${user._id}`);
+                      setError("Cleared favourites cache.");
+                    }}
+                  >
+                    Clear favourites cache
+                  </button>
+                </div>
+              )}
+
+              {activeSettingsSection === "help" && (
+                <div className="space-y-3">
+                  <h4 className="text-sm text-green_1 font-medium">Help & Support</h4>
+                  <button
+                    className="px-3 py-2 rounded-md text-sm bg-[#1f2c33] dark:text-dark_text_1 mr-2"
+                    onClick={() => window.open("https://faq.whatsapp.com/", "_blank")}
+                  >
+                    Open FAQ
+                  </button>
+                  <button
+                    className="px-3 py-2 rounded-md text-sm bg-[#1f2c33] dark:text-dark_text_1"
+                    onClick={() => (window.location.href = "mailto:support@example.com")}
+                  >
+                    Contact support
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {showCropper && tempImage && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+            <div className="w-full max-w-md dark:bg-dark_bg_2 rounded-lg p-4">
+              <h3 className="dark:text-dark_text_1 text-sm font-semibold mb-3">Crop profile image</h3>
+              <div className="relative w-full h-72 bg-black rounded-lg overflow-hidden">
+                <Cropper
+                  image={tempImage}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                />
+              </div>
+              <div className="mt-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.1"
+                  value={zoom}
+                  onChange={(e) => setZoom(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="mt-4 flex gap-2">
+                <button
+                  className="flex-1 py-2 rounded-md dark:bg-dark_bg_3 dark:text-dark_text_1"
+                  onClick={() => {
+                    setShowCropper(false);
+                    setTempImage("");
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="flex-1 py-2 rounded-md bg-green_1 text-white"
+                  onClick={confirmCropAndUpload}
+                  disabled={loading}
+                >
+                  {loading ? "Uploading..." : "Crop & Upload"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="fixed bottom-20 left-4 right-4 md:left-8 md:right-8 px-4 py-3 rounded-lg bg-[#f15c6d] dark:text-white">
