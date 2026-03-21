@@ -82,7 +82,9 @@ function ChatMessages({ typing, searchResults = [], socket }) {
               ) : null}
             </div>
           ))}
-        {typing === activeConversation._id ? <Typing /> : null}
+        {typing?.conversationId === activeConversation._id ? (
+          <Typing typing={typing} />
+        ) : null}
         <div className="mt-2" ref={endRef}></div>
       </div>
     </div>

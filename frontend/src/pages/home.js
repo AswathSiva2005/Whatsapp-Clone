@@ -40,7 +40,7 @@ function Home({ socket }) {
   const userVideo = useRef();
   const connectionRef = useRef();
   //typing
-  const [typing, setTyping] = useState(false);
+  const [typing, setTyping] = useState(null);
   //join user into the socket io
   useEffect(() => {
     socket.emit("join", user._id);
@@ -158,8 +158,20 @@ function Home({ socket }) {
       dispatch(updateMessagesAndConversations(message));
     });
     //listening when a user is typing
-    socket.on("typing", (conversation) => setTyping(conversation));
-    socket.on("stop typing", () => setTyping(false));
+    socket.on("typing", (payload) => setTyping(payload));
+    socket.on("stop typing", (payload) => {
+      setTyping((prevTyping) => {
+        if (!prevTyping) return prevTyping;
+        if (!payload?.conversationId) return null;
+        if (prevTyping.conversationId !== payload.conversationId) {
+          return prevTyping;
+        }
+        if (payload.userId && prevTyping.user?._id !== payload.userId) {
+          return prevTyping;
+        }
+        return null;
+      });
+    });
 
     //message status listeners
     socket.on("message delivered", ({ messageId }) => {

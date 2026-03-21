@@ -39,12 +39,22 @@ export default function Conversations({
       <ul>
         {visibleConversations.map((convo) => {
           let check = checkOnlineStatus(onlineUsers, user, convo.users);
+          const groupOnlineCount = convo.isGroup
+            ? convo.users.filter((member) =>
+                onlineUsers.some(
+                  (onlineUser) =>
+                    String(onlineUser.userId) === String(member._id)
+                )
+              ).length
+            : 0;
+
           return (
             <Conversation
               convo={convo}
               key={convo._id}
               online={!convo.isGroup && check ? true : false}
               typing={typing}
+              groupOnlineCount={groupOnlineCount}
               unreadCount={unreadByConversation[convo._id] || 0}
             />
           );

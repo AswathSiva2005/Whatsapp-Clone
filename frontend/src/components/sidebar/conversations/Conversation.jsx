@@ -14,7 +14,14 @@ import { dateHandler } from "../../../utils/date";
 import { capitalize } from "../../../utils/string";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 
-function Conversation({ convo, socket, online, typing, unreadCount = 0 }) {
+function Conversation({
+  convo,
+  socket,
+  online,
+  typing,
+  groupOnlineCount = 0,
+  unreadCount = 0,
+}) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const { activeConversation } = useSelector((state) => state.chat);
@@ -24,6 +31,11 @@ function Conversation({ convo, socket, online, typing, unreadCount = 0 }) {
     isGroup: convo.isGroup ? convo._id : false,
     token,
   };
+  const isTypingInCurrentConversation = typing?.conversationId === convo._id;
+  const typingUserName = typing?.user?.name || "Someone";
+  const typingUserPicture =
+    typing?.user?.picture || getTwoLetterAvatarUrl(typingUserName);
+
   const openConversation = async () => {
     if (convo.isGroup) {
       dispatch(setActiveConversation(convo));
@@ -83,14 +95,38 @@ function Conversation({ convo, socket, online, typing, unreadCount = 0 }) {
             <div>
               <div className="flex items-center gap-x-1 dark:text-dark_text_2">
                 <div className="flex-1 items-center gap-x-1 dark:text-dark_text_2">
-                  {typing === convo._id ? (
-                    <p className="text-green_1">Typing...</p>
+                  {isTypingInCurrentConversation ? (
+                    <div className="flex items-center gap-2 text-green_1">
+                      <img
+                        src={typingUserPicture}
+                        alt={typingUserName}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = getTwoLetterAvatarUrl(typingUserName);
+                        }}
+                        className="w-4 h-4 rounded-full object-cover"
+                      />
+                      <span className="text-xs truncate max-w-[120px]">
+                        {typingUserName}
+                      </span>
+                      <span className="typing-wave" aria-label="typing">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </span>
+                    </div>
                   ) : (
-                    <p className="text-sm">
-                      {convo.latestMessage?.message.length > 25
-                        ? `${convo.latestMessage?.message.substring(0, 25)}...`
-                        : convo.latestMessage?.message}
-                    </p>
+                    convo.isGroup ? (
+                      <p className="text-sm text-dark_text_2">
+                        {groupOnlineCount} online
+                      </p>
+                    ) : (
+                      <p className="text-sm">
+                        {convo.latestMessage?.message.length > 25
+                          ? `${convo.latestMessage?.message.substring(0, 25)}...`
+                          : convo.latestMessage?.message}
+                      </p>
+                    )
                   )}
                 </div>
               </div>

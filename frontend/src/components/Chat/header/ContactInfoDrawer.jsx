@@ -122,6 +122,17 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     isGroup &&
     String(activeConversation.admin?._id || activeConversation.admin) ===
       String(user._id);
+  const adminId = String(activeConversation.admin?._id || activeConversation.admin || "");
+  const members = Array.isArray(activeConversation.users)
+    ? [...activeConversation.users]
+    : [];
+  const hasAdminInMembers = members.some(
+    (member) => String(member?._id || member) === adminId
+  );
+
+  if (isGroup && adminId && !hasAdminInMembers && activeConversation.admin) {
+    members.unshift(activeConversation.admin);
+  }
 
   // Check if user is blocked
   const isUserBlocked = !isGroup && user.blockedUsers?.includes(targetId);
@@ -457,7 +468,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
         {isGroup && (
           <div className="dark:bg-dark_bg_1 mt-2 p-4 sm:p-5 border-b dark:border-b-dark_border_2">
             <p className="text-xs sm:text-sm dark:text-dark_text_2 mb-3">
-              Members ({activeConversation.users?.length || 0})
+              Members ({members.length || 0})
             </p>
 
             {isAdmin && (
@@ -500,39 +511,44 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
             )}
 
             <div className="space-y-2">
-              {(activeConversation.users || []).map((member) => (
+              {members.map((member) => {
+                const memberId = String(member?._id || member || "");
+                const memberName = member?.name || "Group member";
+                const memberPicture = member?.picture || getTwoLetterAvatarUrl(memberName);
+
+                return (
                 <div
-                  key={member._id}
+                  key={memberId}
                   className="flex items-center justify-between rounded-md px-2 py-2 hover:dark:bg-dark_bg_3"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <img
-                      src={member.picture || getTwoLetterAvatarUrl(member.name)}
-                      alt={member.name}
+                      src={memberPicture}
+                      alt={memberName}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <div className="min-w-0">
-                      <p className="text-sm dark:text-dark_text_1 truncate">{member.name}</p>
+                      <p className="text-sm dark:text-dark_text_1 truncate">{memberName}</p>
                       <p className="text-xs dark:text-dark_text_2">
                         {String(activeConversation.admin?._id || activeConversation.admin) ===
-                        String(member._id)
-                          ? "Admin"
+                        memberId
+                          ? "Creator"
                           : "Member"}
                       </p>
                     </div>
                   </div>
 
-                  {isAdmin && String(member._id) !== String(user._id) && (
+                  {isAdmin && memberId !== String(user._id) && (
                     <button
                       className="text-xs text-[#f15c6d]"
-                      onClick={() => removeMember(member._id)}
+                      onClick={() => removeMember(memberId)}
                       disabled={busy}
                     >
                       Remove
                     </button>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         )}

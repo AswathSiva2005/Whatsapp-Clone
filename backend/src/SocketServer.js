@@ -77,11 +77,17 @@ export default function (socket, io) {
   });
 
   //typing
-  socket.on("typing", (conversation) => {
-    socket.in(conversation).emit("typing", conversation);
+  socket.on("typing", (payload) => {
+    const conversationId = payload?.conversationId;
+    if (!conversationId) return;
+
+    socket.in(conversationId).emit("typing", payload);
   });
-  socket.on("stop typing", (conversation) => {
-    socket.in(conversation).emit("stop typing");
+  socket.on("stop typing", (payload) => {
+    const conversationId = payload?.conversationId;
+    if (!conversationId) return;
+
+    socket.in(conversationId).emit("stop typing", payload);
   });
 
   //call

@@ -9,7 +9,6 @@ import { changeStatus, registerUser } from "../../features/userSlice";
 import { useState } from "react";
 import Picture from "./Picture";
 import axios from "axios";
-import { uploadFiles } from "../../utils/upload";
 export default function RegisterForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -33,6 +32,11 @@ export default function RegisterForm() {
       try {
         const response = await uploadImage();
         pictureUrl = response?.secure_url || "";
+        if (!pictureUrl) {
+          setUploadError(
+            "Image upload failed. Please check upload settings or continue without image."
+          );
+        }
       } catch (err) {
         setUploadError(
           "Image upload failed. Please check Cloudinary keys or continue without image."
@@ -77,8 +81,18 @@ export default function RegisterForm() {
 
       return data;
     } catch (err) {
-      console.error("Cloudinary upload failed:", err.message);
-      return null; // Picture is optional, continue without it
+      // fallback to backend upload so registration avatar still works without client cloud config
+      try {
+        let localFormData = new FormData();
+        localFormData.append("file", picture);
+        const { data } = await axios.post(
+          `${process.env.REACT_APP_API_ENDPOINT}/auth/upload`,
+          localFormData
+        );
+        return data;
+      } catch {
+        return null;
+      }
     }
   };
   return (

@@ -33,15 +33,55 @@ export default function MultipleSelect({
               }}
               className="w-8 h-8 object-cover rounded-full"
             />
-            <span className="text-[#222]">{user.label}</span>
+            <span className="text-white">{user.label}</span>
           </div>
         )}
         styles={{
-          control: (baseStyles, state) => ({
+          control: (baseStyles) => ({
             ...baseStyles,
             border: "none",
             borderColor: "transparent",
             background: "transparent",
+            boxShadow: "none",
+          }),
+          input: (baseStyles) => ({
+            ...baseStyles,
+            color: "#ffffff",
+          }),
+          placeholder: (baseStyles) => ({
+            ...baseStyles,
+            color: "#d1d5db",
+          }),
+          singleValue: (baseStyles) => ({
+            ...baseStyles,
+            color: "#ffffff",
+          }),
+          menu: (baseStyles) => ({
+            ...baseStyles,
+            background: "#111b21",
+            border: "1px solid #1f2a30",
+          }),
+          option: (baseStyles, state) => ({
+            ...baseStyles,
+            color: "#ffffff",
+            background: state.isFocused ? "#1f2c33" : "#111b21",
+          }),
+          multiValue: (baseStyles) => ({
+            ...baseStyles,
+            background: "#1f2c33",
+            borderRadius: "8px",
+          }),
+          multiValueLabel: (baseStyles) => ({
+            ...baseStyles,
+            color: "#ffffff",
+          }),
+          multiValueRemove: (baseStyles) => ({
+            ...baseStyles,
+            color: "#ffffff",
+            ":hover": {
+              backgroundColor: "#314047",
+              color: "#ffffff",
+            },
           }),
         }}
       />
