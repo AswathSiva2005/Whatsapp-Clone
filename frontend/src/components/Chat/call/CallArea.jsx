@@ -3,6 +3,7 @@ import CallTimes from "./CallTimes";
 
 export default function CallArea({
   name,
+  callType = "video",
   totalSecInCall,
   setTotalSecInCall,
   callAccepted,
@@ -16,6 +17,9 @@ export default function CallArea({
           <h1 className="text-white text-lg">
             <b>{name ? capitalize(name) : ""}</b>
           </h1>
+          <span className="text-dark_text_1 text-xs">
+            {callType === "audio" ? "Audio call" : "Video call"}
+          </span>
           {totalSecInCall === 0 ? (
             <span className="text-dark_text_1">Ringing...</span>
           ) : null}

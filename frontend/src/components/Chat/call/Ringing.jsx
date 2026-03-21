@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CloseIcon, ValidIcon } from "../../../svg";
 export default function Ringing({ call, setCall, answerCall, endCall }) {
-  const { receiveingCall, callEnded, name, picture } = call;
+  const { name, picture, callType } = call;
   const [timer, setTimer] = useState(0);
   let interval;
   const handleTimer = () => {
@@ -14,7 +14,7 @@ export default function Ringing({ call, setCall, answerCall, endCall }) {
     if (timer <= 30) {
       handleTimer();
     } else {
-      setCall({ ...call, receiveingCall: false });
+      endCall("missed");
     }
     return () => clearInterval(interval);
   }, [timer]);
@@ -33,12 +33,14 @@ export default function Ringing({ call, setCall, answerCall, endCall }) {
             <h1 className="dark:text-white">
               <b>{name}</b>
             </h1>
-            <span className="dark:text-dark_text_2">Whatsapp video...</span>
+            <span className="dark:text-dark_text_2">
+              {callType === "audio" ? "Whatsapp audio..." : "Whatsapp video..."}
+            </span>
           </div>
         </div>
         {/*Call actions*/}
         <ul className="flex items-center gap-x-2">
-          <li onClick={endCall}>
+          <li onClick={() => endCall("rejected")}>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500">
               <CloseIcon className="fill-white w-5" />
             </button>

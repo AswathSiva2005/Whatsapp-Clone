@@ -95,20 +95,38 @@ export default function (socket, io) {
   socket.on("call user", (data) => {
     let userId = data.userToCall;
     let userSocketId = onlineUsers.find((user) => user.userId == userId);
+    if (!userSocketId?.socketId) return;
+
     io.to(userSocketId.socketId).emit("call user", {
       signal: data.signal,
       from: data.from,
       name: data.name,
       picture: data.picture,
+      callType: data.callType || "video",
+      callId: data.callId || null,
     });
   });
   //---answer call
   socket.on("answer call", (data) => {
-    io.to(data.to).emit("call accepted", data.signal);
+    io.to(data.to).emit("call accepted", {
+      signal: data.signal,
+      callId: data.callId || null,
+    });
   });
 
   //---end call
-  socket.on("end call", (id) => {
-    io.to(id).emit("end call");
+  socket.on("end call", (payload) => {
+    if (typeof payload === "string") {
+      io.to(payload).emit("end call", {});
+      return;
+    }
+
+    const to = payload?.to;
+    if (!to) return;
+
+    io.to(to).emit("end call", {
+      callId: payload?.callId || null,
+      reason: payload?.reason || "ended",
+    });
   });
 }

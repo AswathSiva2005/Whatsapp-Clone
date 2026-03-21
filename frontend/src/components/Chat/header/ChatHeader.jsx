@@ -87,12 +87,12 @@ function ChatHeader({
         </div>
         {/*Right*/}
         <ul className="flex items-center gap-x-1 sm:gap-x-2.5">
-          <li onClick={() => callUser()}>
+          <li onClick={() => callUser("video")}>
             <button className="btn hidden sm:flex">
               <VideoCallIcon />
             </button>
           </li>
-          <li>
+          <li onClick={() => callUser("audio")}>
             <button className="btn hidden sm:flex">
               <CallIcon />
             </button>

@@ -508,7 +508,9 @@ const SettingsPage = () => {
                   </button>
                   <button
                     className="px-3 py-2 rounded-md text-sm bg-[#1f2c33] dark:text-dark_text_1"
-                    onClick={() => (window.location.href = "mailto:support@example.com")}
+                    onClick={() =>
+                      setError("Support: support@aswath-whatsapp-clone.com")
+                    }
                   >
                     Contact support
                   </button>

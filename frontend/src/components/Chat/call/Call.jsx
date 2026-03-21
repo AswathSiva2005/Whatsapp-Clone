@@ -17,7 +17,7 @@ export default function Call({
   totalSecInCall,
   setTotalSecInCall,
 }) {
-  const { receiveingCall, callEnded, name, picture } = call;
+  const { receiveingCall, callEnded, name, callType } = call;
   const [showActions, setShowActions] = useState(false);
   const [toggle, setToggle] = useState(false);
   return (
@@ -37,6 +37,7 @@ export default function Call({
             {/*Call area*/}
             <CallArea
               name={name}
+              callType={callType}
               totalSecInCall={totalSecInCall}
               setTotalSecInCall={setTotalSecInCall}
               callAccepted={callAccepted}
@@ -47,7 +48,7 @@ export default function Call({
           {/*Video streams*/}
           <div>
             {/*user video*/}
-            {callAccepted && !callEnded ? (
+            {callType === "video" && callAccepted && !callEnded ? (
               <div>
                 <video
                   ref={userVideo}
@@ -60,7 +61,7 @@ export default function Call({
               </div>
             ) : null}
             {/*my video*/}
-            {stream ? (
+            {callType === "video" && stream ? (
               <div>
                 <video
                   ref={myVideo}

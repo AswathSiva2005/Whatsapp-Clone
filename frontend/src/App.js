@@ -16,8 +16,14 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import SettingsPage from "./pages/settings";
 
-const API_ENDPOINT =
-  process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
+const API_ENDPOINT = resolveApiEndpoint();
 //socket io
 const socket = io(API_ENDPOINT.split("/api/v1")[0], {
   autoConnect: false,
@@ -50,11 +56,8 @@ function App() {
         });
         setTokenVerified(true);
       } catch (err) {
-        // Token is invalid or expired, clear it
-        if (err.response?.status === 401 || err.code === "ECONNABORTED") {
-          console.warn("Token expired or invalid. Logging out.");
-          dispatch(logout());
-        }
+        // Any verification failure should force fresh login.
+        dispatch(logout());
         setTokenVerified(true);
       }
     };

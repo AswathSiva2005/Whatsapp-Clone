@@ -43,9 +43,7 @@ function ChatMessages({ typing, searchResults = [], socket }) {
 
   return (
     <div
-      className="mb-[60px] bg-[url('https://res.cloudinary.com/dmhcnhtng/image/upload/v1677358270/Untitled-1_copy_rpx8yb.jpg')]
-    bg-cover bg-no-repeat
-    "
+      className="mb-[60px] bg-[#0b141a] bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.03),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(0,168,132,0.08),transparent_30%)]"
     >
       {/*Container*/}
       <div className="scrollbar overflow_scrollbar overflow-auto py-2 px-[5%]">
