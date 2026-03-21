@@ -1,7 +1,14 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const AUTH_ENDPOINT = `${process.env.REACT_APP_API_ENDPOINT}/auth`;
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
+const AUTH_ENDPOINT = `${resolveApiEndpoint()}/auth`;
 
 const initialState = {
   status: "",

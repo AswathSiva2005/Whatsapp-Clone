@@ -152,3 +152,24 @@ export const getCallHistory = async (req, res, next) => {
     next(error);
   }
 };
+
+export const deleteCall = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const { callId } = req.params;
+
+    const call = await CallModel.findById(callId);
+    if (!call) throw createHttpError.NotFound("Call not found.");
+
+    const isParticipant =
+      String(call.caller) === String(userId) || String(call.receiver) === String(userId);
+    if (!isParticipant) {
+      throw createHttpError.Forbidden("You are not part of this call.");
+    }
+
+    await CallModel.findByIdAndDelete(callId);
+    res.status(200).json({ message: "Call deleted successfully.", callId });
+  } catch (error) {
+    next(error);
+  }
+};

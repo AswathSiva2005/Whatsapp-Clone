@@ -6,7 +6,7 @@ import {
   VideoDialIcon,
 } from "../../../svg";
 
-export default function CallAcions({ endCall }) {
+export default function CallAcions({ endCall, callType, switchToVideoCall }) {
   return (
     <div className="h-22 w-full absolute bottom-0 z-40 px-1">
       {/*Container*/}
@@ -23,7 +23,11 @@ export default function CallAcions({ endCall }) {
             </button>
           </li>
           <li>
-            <button className="btn_secondary">
+            <button
+              className="btn_secondary"
+              onClick={callType === "audio" ? switchToVideoCall : undefined}
+              title={callType === "audio" ? "Switch to video" : "Video call"}
+            >
               <VideoDialIcon className="fill-white w-14 mt-2.5" />
             </button>
           </li>

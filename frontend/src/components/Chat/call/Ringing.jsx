@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { CloseIcon, ValidIcon } from "../../../svg";
+import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 export default function Ringing({ call, setCall, answerCall, endCall }) {
   const { name, picture, callType } = call;
   const [timer, setTimer] = useState(0);
+  const audioRef = useRef(null);
   let interval;
   const handleTimer = () => {
     interval = setInterval(() => {
@@ -18,6 +20,25 @@ export default function Ringing({ call, setCall, answerCall, endCall }) {
     }
     return () => clearInterval(interval);
   }, [timer]);
+
+  const handleAnswer = () => {
+    // Stop ringtone audio immediately when answering
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    answerCall();
+  };
+
+  const handleReject = () => {
+    // Stop ringtone audio when rejecting
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    endCall("rejected");
+  };
+
   return (
     <div className="dark:bg-dark_bg_1 rounded-lg fixed  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-lg z-30">
       {/*Container*/}
@@ -25,8 +46,12 @@ export default function Ringing({ call, setCall, answerCall, endCall }) {
         {/*Call infos*/}
         <div className="flex items-center gap-x-2">
           <img
-            src={picture}
+            src={picture || getTwoLetterAvatarUrl(name || "Caller")}
             alt={`caller profile picture`}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = getTwoLetterAvatarUrl(name || "Caller");
+            }}
             className="w-28 h-28 rounded-full"
           />
           <div>
@@ -40,12 +65,12 @@ export default function Ringing({ call, setCall, answerCall, endCall }) {
         </div>
         {/*Call actions*/}
         <ul className="flex items-center gap-x-2">
-          <li onClick={() => endCall("rejected")}>
+          <li onClick={handleReject}>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500">
               <CloseIcon className="fill-white w-5" />
             </button>
           </li>
-          <li onClick={answerCall}>
+          <li onClick={handleAnswer}>
             <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500">
               <ValidIcon className="fill-white w-6 mt-2" />
             </button>
@@ -53,7 +78,7 @@ export default function Ringing({ call, setCall, answerCall, endCall }) {
         </ul>
       </div>
       {/*Ringtone*/}
-      <audio src="../../../../audio/ringtone.mp3" autoPlay loop></audio>
+      <audio ref={audioRef} src="../../../../audio/ringtone.mp3" autoPlay loop></audio>
     </div>
   );
 }

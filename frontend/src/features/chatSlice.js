@@ -1,8 +1,15 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const CONVERSATION_ENDPOINT = `${process.env.REACT_APP_API_ENDPOINT}/conversation`;
-const MESSAGE_ENDPOINT = `${process.env.REACT_APP_API_ENDPOINT}/message`;
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
+const CONVERSATION_ENDPOINT = `${resolveApiEndpoint()}/conversation`;
+const MESSAGE_ENDPOINT = `${resolveApiEndpoint()}/message`;
 
 const initialState = {
   status: "",

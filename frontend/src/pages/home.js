@@ -29,6 +29,8 @@ const API_ENDPOINT = resolveApiEndpoint();
 
 const callData = {
   socketId: "",
+  peerSocketId: "",
+  peerUserId: "",
   receiveingCall: false,
   callEnded: false,
   name: "",
@@ -36,6 +38,8 @@ const callData = {
   signal: "",
   callType: "video",
   callId: "",
+  isGroup: false,
+  participants: [],
 };
 function Home({ socket }) {
   const dispatch = useDispatch();
@@ -53,8 +57,20 @@ function Home({ socket }) {
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
+  const callAcceptedRef = useRef(false);
+  const peerSocketRef = useRef("");
+  const callIdRef = useRef("");
   //typing
   const [typing, setTyping] = useState(null);
+
+  useEffect(() => {
+    callAcceptedRef.current = callAccepted;
+  }, [callAccepted]);
+
+  useEffect(() => {
+    peerSocketRef.current = call.peerSocketId || call.socketId || "";
+    callIdRef.current = call.callId || "";
+  }, [call.peerSocketId, call.socketId, call.callId]);
 
   useEffect(() => {
     // Attach local media after call UI mounts to avoid ref race conditions.
@@ -85,20 +101,29 @@ function Home({ socket }) {
     };
 
     const callUserHandler = (data) => {
+      setCallAccepted(false);
+      setTotalSecInCall(0);
       setCall((prev) => ({
         ...prev,
         socketId: data.from,
+        peerSocketId: data.from,
+        peerUserId: data.fromUserId || "",
         name: data.name,
         picture: data.picture,
         signal: data.signal,
+        callEnded: false,
         receiveingCall: true,
         callType: data.callType || "video",
         callId: data.callId || "",
+        isGroup: Boolean(data.isGroup),
+        participants: Array.isArray(data.participants) ? data.participants : [],
       }));
     };
 
     const endCallHandler = (payload) => {
       setShow(false);
+      setCallAccepted(false);
+      setTotalSecInCall(0);
       setCall((prev) => ({ ...prev, callEnded: true, receiveingCall: false }));
       if (myVideo.current) {
         myVideo.current.srcObject = null;
@@ -119,21 +144,86 @@ function Home({ socket }) {
       }
     };
 
+    const switchToVideoHandler = () => {
+      setCall((prev) => ({ ...prev, callType: "video" }));
+    };
+
+    const webRtcSignalHandler = (payload) => {
+      if (!payload?.signal || !connectionRef.current) return;
+      try {
+        connectionRef.current.signal(payload.signal);
+      } catch {
+        // ignore stale renegotiation packets
+      }
+    };
+
+    const callAcceptedHandler = async (payload) => {
+      if (!payload?.from) return;
+      
+      setCallAccepted(true);
+      setShow(true);
+      // Caller (A) receives this - clear ringing state so Ringing component hides
+      setCall((prev) => ({
+        ...prev,
+        peerSocketId: payload?.from || prev.peerSocketId,
+        receiveingCall: false,
+      }));
+      
+      const acceptedSignal = payload?.signal || payload;
+      const acceptedCallId = payload?.callId;
+
+      if (acceptedCallId && token) {
+        try {
+          await axios.patch(
+            `${API_ENDPOINT}/call/${acceptedCallId}/accept`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+        } catch {
+          // call media should continue even if status update fails
+        }
+      }
+
+      if (connectionRef.current) {
+        connectionRef.current.signal(acceptedSignal);
+      }
+    };
+
     socket.on("setup socket", setupSocketHandler);
     socket.on("call user", callUserHandler);
+    socket.on("call accepted", callAcceptedHandler);
     socket.on("end call", endCallHandler);
+    socket.on("switch to video", switchToVideoHandler);
+    socket.on("webrtc signal", webRtcSignalHandler);
 
     return () => {
       socket.off("setup socket", setupSocketHandler);
       socket.off("call user", callUserHandler);
+      socket.off("call accepted", callAcceptedHandler);
       socket.off("end call", endCallHandler);
+      socket.off("switch to video", switchToVideoHandler);
+      socket.off("webrtc signal", webRtcSignalHandler);
     };
-  }, [socket, callAccepted, token]);
+  }, [socket]);
   //--call user funcion
   const callUser = async (callType = "video") => {
     if (!activeConversation?._id || !user?.token) return;
 
-    const receiverId = getConversationId(user, activeConversation.users);
+    const isGroupCall = Boolean(activeConversation?.isGroup);
+    const participants = isGroupCall
+      ? (activeConversation.users || [])
+          .filter((u) => String(u._id) !== String(user._id))
+          .map((u) => ({ _id: u._id, name: u.name, picture: u.picture || "" }))
+      : [];
+
+    const receiverId = isGroupCall
+      ? participants?.[0]?._id || ""
+      : getConversationId(user, activeConversation.users);
+
+    if (!receiverId) return;
+
     let callId = "";
 
     try {
@@ -157,12 +247,25 @@ function Home({ socket }) {
     if (!localStream) return;
 
     enableMedia(localStream);
+    setCallAccepted(false);
+    setTotalSecInCall(0);
     setCall((prev) => ({
       ...prev,
-      name: getConversationName(user, activeConversation.users),
-      picture: getConversationPicture(user, activeConversation.users),
+      callEnded: false,
+      receiveingCall: false,
+      signal: "",
+      peerSocketId: "",
+      peerUserId: receiverId,
+      name: isGroupCall
+        ? activeConversation.name
+        : getConversationName(user, activeConversation.users),
+      picture: isGroupCall
+        ? activeConversation.picture || ""
+        : getConversationPicture(user, activeConversation.users),
       callType,
       callId,
+      isGroup: isGroupCall,
+      participants,
     }));
     const peer = new Peer({
       initiator: true,
@@ -170,12 +273,24 @@ function Home({ socket }) {
       stream: localStream,
     });
     peer.on("signal", (data) => {
+      if (callAcceptedRef.current && peerSocketRef.current) {
+        socket.emit("webrtc signal", {
+          to: peerSocketRef.current,
+          callId: callIdRef.current || callId,
+          signal: data,
+        });
+        return;
+      }
+
       socket.emit("call user", {
         userToCall: getConversationId(user, activeConversation.users),
         signal: data,
         from: socket.id || socketId,
+        fromUserId: user._id,
         name: user.name,
         picture: user.picture,
+        isGroup: isGroupCall,
+        participants,
         callType,
         callId,
       });
@@ -184,27 +299,6 @@ function Home({ socket }) {
       if (userVideo.current) {
         userVideo.current.srcObject = stream;
       }
-    });
-    socket.once("call accepted", async (payload) => {
-      setCallAccepted(true);
-      const acceptedSignal = payload?.signal || payload;
-      const acceptedCallId = payload?.callId || callId;
-
-      if (acceptedCallId && token) {
-        try {
-          await axios.patch(
-            `${API_ENDPOINT}/call/${acceptedCallId}/accept`,
-            {},
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-        } catch {
-          // call media should continue even if status update fails
-        }
-      }
-
-      peer.signal(acceptedSignal);
     });
     connectionRef.current = peer;
   };
@@ -215,6 +309,16 @@ function Home({ socket }) {
 
     enableMedia(localStream);
     setCallAccepted(true);
+    setShow(true);
+    
+    // Explicitly clear ringing state to hide Ringing component and stop audio
+    setCall((prev) => ({ ...prev, receiveingCall: false }));
+    
+    // Update refs immediately to ensure upcoming peer signals route correctly
+    callAcceptedRef.current = true;
+    peerSocketRef.current = call.socketId;
+    callIdRef.current = call.callId;
+    
     if (call.callId && token) {
       try {
         await axios.patch(
@@ -235,9 +339,20 @@ function Home({ socket }) {
       stream: localStream,
     });
     peer.on("signal", (data) => {
+      if (callAcceptedRef.current && peerSocketRef.current) {
+        socket.emit("webrtc signal", {
+          signal: data,
+          to: peerSocketRef.current,
+          callId: callIdRef.current || null,
+        });
+        return;
+      }
+
       socket.emit("answer call", {
         signal: data,
         to: call.socketId,
+        fromUserId: user._id,
+        toUserId: call.peerUserId || null,
         callId: call.callId || null,
       });
     });
@@ -252,6 +367,8 @@ function Home({ socket }) {
   //--end call  funcion
   const endCall = async (reason = "ended") => {
     setShow(false);
+    setCallAccepted(false);
+    setTotalSecInCall(0);
     setCall((prev) => ({ ...prev, callEnded: true, receiveingCall: false }));
     if (myVideo.current) {
       myVideo.current.srcObject = null;
@@ -275,12 +392,14 @@ function Home({ socket }) {
     }
 
     socket.emit("end call", {
-      to: call.socketId,
+      to: call.peerSocketId || call.socketId,
+      toUserId: call.peerUserId || null,
       reason,
       callId: call.callId || null,
     });
     connectionRef?.current?.destroy();
   };
+
   //--------------------------
   const setupMedia = async (callType = "video") => {
     try {
@@ -298,6 +417,32 @@ function Home({ socket }) {
 
   const enableMedia = () => {
     setShow(true);
+  };
+
+  const switchToVideoCall = async () => {
+    if (call.callType !== "audio" || !connectionRef.current) return;
+
+    try {
+      const upgradedStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      const videoTrack = upgradedStream.getVideoTracks()[0];
+      if (videoTrack) {
+        connectionRef.current.addTrack(videoTrack, upgradedStream);
+      }
+
+      setStream(upgradedStream);
+      setCall((prev) => ({ ...prev, callType: "video" }));
+      socket.emit("switch to video", {
+        to: call.peerSocketId || call.socketId,
+        toUserId: call.peerUserId || null,
+        callId: call.callId || null,
+      });
+    } catch {
+      // keep audio call active if upgrade fails
+    }
   };
   //get Conversations
   useEffect(() => {
@@ -395,6 +540,7 @@ function Home({ socket }) {
           answerCall={answerCall}
           show={show}
           endCall={endCall}
+          switchToVideoCall={switchToVideoCall}
           totalSecInCall={totalSecInCall}
           setTotalSecInCall={setTotalSecInCall}
         />

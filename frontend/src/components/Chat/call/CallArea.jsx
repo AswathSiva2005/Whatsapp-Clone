@@ -4,6 +4,8 @@ import CallTimes from "./CallTimes";
 export default function CallArea({
   name,
   callType = "video",
+  isGroup = false,
+  participants = [],
   totalSecInCall,
   setTotalSecInCall,
   callAccepted,
@@ -20,6 +22,11 @@ export default function CallArea({
           <span className="text-dark_text_1 text-xs">
             {callType === "audio" ? "Audio call" : "Video call"}
           </span>
+          {isGroup ? (
+            <span className="text-dark_text_1 text-xs text-center max-w-[290px] truncate">
+              Members: {participants.map((p) => p?.name).filter(Boolean).join(", ")}
+            </span>
+          ) : null}
           {totalSecInCall === 0 ? (
             <span className="text-dark_text_1">Ringing...</span>
           ) : null}

@@ -7,6 +7,13 @@ import axios from "axios";
 import { ReturnIcon } from "../svg";
 import { getTwoLetterAvatarUrl } from "../utils/avatar";
 
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
 const SettingsPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -85,7 +92,7 @@ const SettingsPage = () => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/upload`,
+        `${resolveApiEndpoint()}/user/upload`,
         formDataToSend,
         {
           headers: {
@@ -98,7 +105,7 @@ const SettingsPage = () => {
 
       // Save picture immediately so it is persisted in MongoDB (visible in Compass).
       const profileResponse = await axios.put(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/profile`,
+        `${resolveApiEndpoint()}/user/profile`,
         {
           picture: uploadedUrl,
         },
@@ -213,7 +220,7 @@ const SettingsPage = () => {
     setError("");
     try {
       const { data } = await axios.put(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/profile`,
+        `${resolveApiEndpoint()}/user/profile`,
         formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -239,7 +246,7 @@ const SettingsPage = () => {
     setError("");
     try {
       const { data } = await axios.put(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/profile`,
+        `${resolveApiEndpoint()}/user/profile`,
         {
           picture: "",
         },

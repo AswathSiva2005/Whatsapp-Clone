@@ -12,9 +12,20 @@ import {
 } from "../../svg";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { getTwoLetterAvatarUrl } from "../../utils/avatar";
 import StatusPanel from "./header/StatusPanel";
 import { setFavoriteConversationIds } from "../../features/chatSlice";
+import CallHistoryPanel from "./calls/CallHistoryPanel";
+
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
+const API_ENDPOINT = resolveApiEndpoint();
 
 export default function Sidebar({ onlineUsers, typing }) {
   const navigate = useNavigate();
@@ -28,6 +39,8 @@ export default function Sidebar({ onlineUsers, typing }) {
   } = useSelector((state) => state.chat);
   const [searchResults, setSearchResults] = useState([]);
   const [activeView, setActiveView] = useState("all");
+  const [callHistory, setCallHistory] = useState([]);
+  const [callsLoading, setCallsLoading] = useState(false);
 
   const unreadChatsCount = conversations.reduce((count, conversation) => {
     const unreadCount = unreadByConversation[conversation._id] || 0;
@@ -51,6 +64,44 @@ export default function Sidebar({ onlineUsers, typing }) {
     localStorage.setItem(key, JSON.stringify(favoriteConversationIds));
   }, [favoriteConversationIds, user._id]);
 
+  const handleCallDeleted = (deletedCallId) => {
+    setCallHistory((prevHistory) =>
+      prevHistory.filter((call) => call._id !== deletedCallId)
+    );
+  };
+
+  useEffect(() => {
+    if (activeView !== "calls" || !user?.token) return;
+
+    let cancelled = false;
+    const loadCalls = async () => {
+      setCallsLoading(true);
+      try {
+        const { data } = await axios.get(`${API_ENDPOINT}/call`, {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        if (!cancelled) {
+          setCallHistory(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setCallHistory([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setCallsLoading(false);
+        }
+      }
+    };
+
+    loadCalls();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeView, user?.token]);
+
   return (
     <div className="w-full h-full flex select-none border-r dark:border-r-dark_border_2 bg-[#111b21]">
       <aside className="w-[58px] dark:bg-[#101418] border-r dark:border-r-[#252d32] flex flex-col items-center justify-between py-2">
@@ -65,7 +116,12 @@ export default function Sidebar({ onlineUsers, typing }) {
               className={activeView !== "status" ? "dark:fill-green_1" : "dark:fill-dark_svg_2"}
             />
           </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1">
+          <button
+            className={`w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1 ${
+              activeView === "calls" ? "bg-[#1f2c34]" : ""
+            }`}
+            onClick={() => setActiveView("calls")}
+          >
             <CallIcon className="dark:fill-dark_svg_2" />
           </button>
           <button className="w-10 h-10 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1">
@@ -111,6 +167,12 @@ export default function Sidebar({ onlineUsers, typing }) {
 
         {activeView === "status" ? (
           <StatusPanel embedded onCloseEmbedded={() => setActiveView("all")} />
+        ) : activeView === "calls" ? (
+          <CallHistoryPanel 
+            callHistory={callHistory} 
+            loading={callsLoading} 
+            onCallDeleted={handleCallDeleted}
+          />
         ) : (
           <>
             {/*Search*/}

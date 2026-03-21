@@ -3,6 +3,13 @@ import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { FilterIcon, ReturnIcon, SearchIcon, CloseIcon } from "../../../svg";
 
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
 export default function Search({
   searchLength,
   setSearchResults,
@@ -36,8 +43,8 @@ export default function Search({
         const query = searchQuery.trim();
         const isPhone = /^\+?[1-9]\d{9,14}$/.test(query);
         const endpoint = isPhone
-          ? `${process.env.REACT_APP_API_ENDPOINT}/user/phone?phone=${encodeURIComponent(query)}`
-          : `${process.env.REACT_APP_API_ENDPOINT}/user?search=${encodeURIComponent(query)}`;
+          ? `${resolveApiEndpoint()}/user/phone?phone=${encodeURIComponent(query)}`
+          : `${resolveApiEndpoint()}/user?search=${encodeURIComponent(query)}`;
         const { data } = await axios.get(endpoint, {
           headers: {
             Authorization: `Bearer ${token}`,

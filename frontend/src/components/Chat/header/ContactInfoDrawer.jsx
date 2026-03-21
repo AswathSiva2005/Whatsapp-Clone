@@ -21,6 +21,13 @@ import {
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
 import { uploadFiles } from "../../../utils/upload";
 
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
 export default function ContactInfoDrawer({ activeConversation, onClose }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
@@ -71,7 +78,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     const timeout = setTimeout(async () => {
       try {
         const { data } = await axios.get(
-          `${process.env.REACT_APP_API_ENDPOINT}/user?search=${encodeURIComponent(keyword)}`,
+          `${resolveApiEndpoint()}/user?search=${encodeURIComponent(keyword)}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -147,7 +154,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     setBusy(true);
     try {
       const { data } = await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/block`,
+        `${resolveApiEndpoint()}/user/block`,
         { userId: targetId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -169,7 +176,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     setBusy(true);
     try {
       const { data } = await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/unblock`,
+        `${resolveApiEndpoint()}/user/unblock`,
         { userId: targetId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -191,7 +198,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     setBusy(true);
     try {
       await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/conversation/clear`,
+        `${resolveApiEndpoint()}/conversation/clear`,
         { conversationId: activeConversation._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -209,7 +216,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     setBusy(true);
     try {
       await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/conversation/delete`,
+        `${resolveApiEndpoint()}/conversation/delete`,
         { conversationId: activeConversation._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

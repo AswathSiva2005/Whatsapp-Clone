@@ -11,6 +11,13 @@ import axios from "axios";
 import SocketContext from "../../context/SocketContext";
 import { updateMessageStatus } from "../../features/chatSlice";
 
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
 function ChatContainer({ onlineUsers, typing, callUser, socket, onBack }) {
   const dispatch = useDispatch();
   const { activeConversation, files, messages } = useSelector((state) => state.chat);
@@ -65,7 +72,7 @@ function ChatContainer({ onlineUsers, typing, callUser, socket, onBack }) {
         (u) => u._id !== user._id
       );
       await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/user/unblock`,
+        `${resolveApiEndpoint()}/user/unblock`,
         { userId: otherUser._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

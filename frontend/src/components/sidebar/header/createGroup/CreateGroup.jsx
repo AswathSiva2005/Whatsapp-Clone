@@ -8,6 +8,14 @@ import ClipLoader from "react-spinners/ClipLoader";
 import { createGroupConversation } from "../../../../features/chatSlice";
 import { uploadFiles } from "../../../../utils/upload";
 import { getTwoLetterAvatarUrl } from "../../../../utils/avatar";
+
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
 export default function CreateGroup({ setShowCreateGroup }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
@@ -30,7 +38,7 @@ export default function CreateGroup({ setShowCreateGroup }) {
     const timeout = setTimeout(async () => {
       try {
         const { data } = await axios.get(
-          `${process.env.REACT_APP_API_ENDPOINT}/user?search=${encodeURIComponent(keyword)}`,
+          `${resolveApiEndpoint()}/user?search=${encodeURIComponent(keyword)}`,
           {
             headers: {
               Authorization: `Bearer ${user.token}`,

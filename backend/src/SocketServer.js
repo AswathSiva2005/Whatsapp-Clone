@@ -1,6 +1,13 @@
 import { MessageModel } from "./models/index.js";
 
 let onlineUsers = [];
+const activeCalls = new Map();
+
+const getUserSockets = (userId) =>
+  onlineUsers
+    .filter((user) => String(user.userId) === String(userId))
+    .map((user) => user.socketId);
+
 export default function (socket, io) {
   //user joins or opens the application
   socket.on("join", (user) => {
@@ -15,6 +22,32 @@ export default function (socket, io) {
 
   //socket disconnect
   socket.on("disconnect", () => {
+    const activeCall = activeCalls.get(socket.id);
+    if (activeCall) {
+      if (activeCall.peerSocketId) {
+        io.to(activeCall.peerSocketId).emit("end call", {
+          callId: activeCall.callId || null,
+          reason: "ended",
+        });
+      }
+
+      if (activeCall.peerUserId) {
+        getUserSockets(activeCall.peerUserId).forEach((peerSocketId) => {
+          if (peerSocketId !== socket.id) {
+            io.to(peerSocketId).emit("end call", {
+              callId: activeCall.callId || null,
+              reason: "ended",
+            });
+          }
+        });
+      }
+
+      if (activeCall.peerSocketId) {
+        activeCalls.delete(activeCall.peerSocketId);
+      }
+      activeCalls.delete(socket.id);
+    }
+
     onlineUsers = onlineUsers.filter((user) => user.socketId !== socket.id);
     io.emit("get-online-users", onlineUsers);
   });
@@ -92,9 +125,7 @@ export default function (socket, io) {
   //---call user
   socket.on("call user", (data) => {
     const userId = data.userToCall;
-    const recipientSockets = onlineUsers
-      .filter((user) => String(user.userId) === String(userId))
-      .map((user) => user.socketId);
+    const recipientSockets = getUserSockets(userId);
 
     if (recipientSockets.length === 0) return;
 
@@ -104,6 +135,7 @@ export default function (socket, io) {
         from: data.from,
         name: data.name,
         picture: data.picture,
+        fromUserId: data.fromUserId || null,
         callType: data.callType || "video",
         callId: data.callId || null,
       });
@@ -111,9 +143,34 @@ export default function (socket, io) {
   });
   //---answer call
   socket.on("answer call", (data) => {
+    if (data?.to) {
+      activeCalls.set(socket.id, {
+        peerSocketId: data.to,
+        peerUserId: data.toUserId || null,
+        callId: data.callId || null,
+      });
+      activeCalls.set(data.to, {
+        peerSocketId: socket.id,
+        peerUserId: data.fromUserId || null,
+        callId: data.callId || null,
+      });
+    }
+
     io.to(data.to).emit("call accepted", {
       signal: data.signal,
       callId: data.callId || null,
+      from: socket.id,
+    });
+  });
+
+  socket.on("webrtc signal", (payload) => {
+    const to = payload?.to;
+    if (!to) return;
+
+    io.to(to).emit("webrtc signal", {
+      signal: payload.signal,
+      callId: payload.callId || null,
+      from: socket.id,
     });
   });
 
@@ -121,15 +178,64 @@ export default function (socket, io) {
   socket.on("end call", (payload) => {
     if (typeof payload === "string") {
       io.to(payload).emit("end call", {});
+
+      const activeCall = activeCalls.get(socket.id);
+      if (activeCall?.peerUserId) {
+        getUserSockets(activeCall.peerUserId).forEach((socketId) => {
+          io.to(socketId).emit("end call", {
+            callId: activeCall.callId || null,
+            reason: "ended",
+          });
+        });
+      }
       return;
     }
 
+    const reason = payload?.reason || "ended";
+    const callId = payload?.callId || null;
     const to = payload?.to;
-    if (!to) return;
 
-    io.to(to).emit("end call", {
-      callId: payload?.callId || null,
-      reason: payload?.reason || "ended",
-    });
+    if (to) {
+      io.to(to).emit("end call", {
+        callId,
+        reason,
+      });
+    }
+
+    if (payload?.toUserId) {
+      getUserSockets(payload.toUserId).forEach((socketId) => {
+        io.to(socketId).emit("end call", {
+          callId,
+          reason,
+        });
+      });
+    }
+
+    const activeCall = activeCalls.get(socket.id);
+    if (activeCall?.peerSocketId) {
+      activeCalls.delete(activeCall.peerSocketId);
+    }
+    activeCalls.delete(socket.id);
+    if (to) {
+      activeCalls.delete(to);
+    }
+  });
+
+  socket.on("switch to video", (payload) => {
+    const to = payload?.to;
+    if (to) {
+      io.to(to).emit("switch to video", {
+        callId: payload?.callId || null,
+      });
+    }
+
+    const toUserId = payload?.toUserId;
+    if (toUserId) {
+      getUserSockets(toUserId).forEach((socketId) => {
+        io.to(socketId).emit("switch to video", {
+          callId: payload?.callId || null,
+        });
+      });
+    }
   });
 }
