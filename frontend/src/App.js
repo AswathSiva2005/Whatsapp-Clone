@@ -5,6 +5,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -31,6 +32,50 @@ const socket = io(API_ENDPOINT.split("/api/v1")[0], {
   reconnectionAttempts: 5,
   reconnectionDelay: 1500,
 });
+
+function stopGlobalRingAudio() {
+  if (typeof document === "undefined") return;
+
+  const audioElements = Array.from(document.querySelectorAll("audio"));
+  audioElements.forEach((audio) => {
+    const src = audio.getAttribute("src") || "";
+    if (src.includes("ringtone.mp3") || src.includes("ringing.mp3")) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  });
+}
+
+function GlobalRingAudioGuard() {
+  const location = useLocation();
+
+  useEffect(() => {
+    stopGlobalRingAudio();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const onBlur = () => stopGlobalRingAudio();
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") {
+        stopGlobalRingAudio();
+      }
+    };
+
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("beforeunload", onBlur);
+    window.addEventListener("pagehide", onBlur);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("beforeunload", onBlur);
+      window.removeEventListener("pagehide", onBlur);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  return null;
+}
 
 function App() {
   const dispatch = useDispatch();
@@ -89,6 +134,7 @@ function App() {
     <div className="dark">
       <SocketContext.Provider value={socket}>
         <Router>
+          <GlobalRingAudioGuard />
           <Routes>
             <Route
               exact

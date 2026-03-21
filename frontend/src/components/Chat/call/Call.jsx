@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CallAcions from "./CallAcions";
 import CallArea from "./CallArea";
 import Header from "./Header";
@@ -21,10 +21,32 @@ export default function Call({
   const { receiveingCall, callEnded, name, callType, isGroup, participants } = call;
   const [showActions, setShowActions] = useState(false);
   const [toggle, setToggle] = useState(false);
+  const outgoingRingtoneRef = useRef(null);
+
+  useEffect(() => {
+    // Ensure ringback audio cannot continue after call transitions.
+    if (callAccepted || callEnded || !show) {
+      if (outgoingRingtoneRef.current) {
+        outgoingRingtoneRef.current.pause();
+        outgoingRingtoneRef.current.currentTime = 0;
+      }
+    }
+  }, [callAccepted, callEnded, show]);
+
+  useEffect(() => {
+    const ringAudio = outgoingRingtoneRef.current;
+    return () => {
+      if (ringAudio) {
+        ringAudio.pause();
+        ringAudio.currentTime = 0;
+      }
+    };
+  }, []);
+
   return (
     <>
       <div
-        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[550px] z-10 rounded-2xl overflow-hidden callbg
+        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-24px)] max-w-[350px] h-[calc(100dvh-120px)] max-h-[550px] z-10 rounded-2xl overflow-hidden callbg
         ${receiveingCall && !callAccepted ? "hidden" : ""}
         `}
         onMouseOver={() => setShowActions(true)}
@@ -101,7 +123,12 @@ export default function Call({
       ) : null}
       {/*calling ringtone*/}
       {!callAccepted && show ? (
-        <audio src="../../../../audio/ringing.mp3" autoPlay loop></audio>
+        <audio
+          ref={outgoingRingtoneRef}
+          src="../../../../audio/ringing.mp3"
+          autoPlay
+          loop
+        ></audio>
       ) : null}
     </>
   );

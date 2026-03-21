@@ -280,16 +280,16 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="w-full h-screen dark:bg-dark_bg_2 flex">
-      <div className="w-full max-w-full md:max-w-[900px] lg:max-w-[1200px] mx-auto h-full border-r dark:border-r-dark_border_2 dark:bg-dark_bg_1 flex flex-col">
-        <div className="h-[108px] dark:bg-dark_bg_2 px-4 pb-4 pt-12 flex items-end gap-6 border-b dark:border-b-dark_border_2">
+    <div className="w-full min-h-[100dvh] dark:bg-dark_bg_2 flex">
+      <div className="w-full max-w-full md:max-w-[900px] lg:max-w-[1200px] mx-auto min-h-[100dvh] border-r dark:border-r-dark_border_2 dark:bg-dark_bg_1 flex flex-col">
+        <div className="h-[88px] sm:h-[108px] dark:bg-dark_bg_2 px-3 sm:px-4 pb-3 sm:pb-4 pt-8 sm:pt-12 flex items-end gap-3 sm:gap-6 border-b dark:border-b-dark_border_2">
           <button className="btn" onClick={() => navigate("/")}>
             <ReturnIcon className="fill-dark_svg_1" />
           </button>
-          <h1 className="text-xl dark:text-dark_text_1 font-medium">Profile</h1>
+          <h1 className="text-lg sm:text-xl dark:text-dark_text_1 font-medium">Profile</h1>
         </div>
 
-        <div className="h-[calc(100vh-108px)] overflow-y-auto scrollbar grid grid-cols-1 md:grid-cols-2">
+        <div className="h-[calc(100dvh-88px)] sm:h-[calc(100dvh-108px)] overflow-y-auto scrollbar grid grid-cols-1 md:grid-cols-2">
           {/* Left Column - Profile Picture and Basic Info */}
           <div className="border-r dark:border-r-dark_border_2">
             <div className="dark:bg-dark_bg_2 p-6 md:p-8 flex flex-col items-center gap-4 border-b dark:border-b-dark_border_2">

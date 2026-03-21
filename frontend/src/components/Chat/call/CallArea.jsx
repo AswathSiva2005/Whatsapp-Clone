@@ -27,8 +27,11 @@ export default function CallArea({
               Members: {participants.map((p) => p?.name).filter(Boolean).join(", ")}
             </span>
           ) : null}
-          {totalSecInCall === 0 ? (
+          {!callAccepted && totalSecInCall === 0 ? (
             <span className="text-dark_text_1">Ringing...</span>
+          ) : null}
+          {callAccepted && totalSecInCall === 0 ? (
+            <span className="text-dark_text_1">Connecting...</span>
           ) : null}
           <CallTimes
             totalSecInCall={totalSecInCall}

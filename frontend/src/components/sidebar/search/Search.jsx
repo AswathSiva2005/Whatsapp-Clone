@@ -105,7 +105,7 @@ export default function Search({
             </button>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
                 activeView === "all"

@@ -6,15 +6,21 @@ export default function CallTimes({
   callAccepted,
 }) {
   useEffect(() => {
-    const setSecInCall = () => {
-      setTotalSecInCall((prev) => prev + 1);
-      setTimeout(setSecInCall, 1000);
-    };
-    if (callAccepted) {
-      setSecInCall();
+    if (!callAccepted) {
+      setTotalSecInCall(0);
+      return;
     }
-    return () => setTotalSecInCall(0);
-  }, [callAccepted]);
+
+    const intervalId = setInterval(() => {
+      setTotalSecInCall((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+      setTotalSecInCall(0);
+    };
+  }, [callAccepted, setTotalSecInCall]);
+
   return (
     <div
       className={`text-dark_text_2 ${

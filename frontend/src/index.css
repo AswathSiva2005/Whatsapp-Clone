@@ -33,12 +33,12 @@
     @apply w-full dark:bg-dark_bg_2 p-1.5 dark:text-dark_text_1 rounded-lg flex-1 outline-none;
   }
   .convos {
-    height: calc(100vh - 220px);
+    height: calc(100dvh - 220px);
     overflow-y: auto;
     overflow-x: hidden;
   }
   .overflow_scrollbar {
-    height: calc(100vh - 155px);
+    height: calc(100dvh - 155px);
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -46,7 +46,7 @@
     border: 2px solid #00a884;
   }
   .hview {
-    height: calc(100vh - 290px);
+    height: calc(100dvh - 290px);
     padding: 8px 0;
   }
   .fileThumbnail:hover .removeFileIcon {
@@ -70,6 +70,27 @@
   }
   .moveActionsComp {
     @apply block;
+  }
+}
+
+@media (max-width: 640px) {
+  .convos {
+    height: calc(100dvh - 200px);
+  }
+
+  .overflow_scrollbar {
+    height: calc(100dvh - 145px);
+  }
+
+  .hview {
+    height: calc(100dvh - 260px);
+  }
+
+  .SmallVideoCall {
+    width: 84px;
+    height: 112px;
+    right: 8px;
+    bottom: 8px;
   }
 }
 

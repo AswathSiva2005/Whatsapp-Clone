@@ -60,6 +60,17 @@ function Home({ socket }) {
   const callAcceptedRef = useRef(false);
   const peerSocketRef = useRef("");
   const callIdRef = useRef("");
+  const stopAllRingAudios = () => {
+    if (typeof document === "undefined") return;
+    const audioElements = Array.from(document.querySelectorAll("audio"));
+    audioElements.forEach((audio) => {
+      const src = audio.getAttribute("src") || "";
+      if (src.includes("ringtone.mp3") || src.includes("ringing.mp3")) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+  };
   //typing
   const [typing, setTyping] = useState(null);
 
@@ -121,6 +132,7 @@ function Home({ socket }) {
     };
 
     const endCallHandler = (payload) => {
+      stopAllRingAudios();
       setShow(false);
       setCallAccepted(false);
       setTotalSecInCall(0);
@@ -159,7 +171,8 @@ function Home({ socket }) {
 
     const callAcceptedHandler = async (payload) => {
       if (!payload?.from) return;
-      
+
+      stopAllRingAudios();
       setCallAccepted(true);
       setShow(true);
       // Caller (A) receives this - clear ringing state so Ringing component hides
@@ -304,16 +317,21 @@ function Home({ socket }) {
   };
   //--answer call  funcion
   const answerCall = async () => {
-    const localStream = await setupMedia(call.callType || "video");
-    if (!localStream) return;
-
-    enableMedia(localStream);
+    stopAllRingAudios();
     setCallAccepted(true);
     setShow(true);
-    
-    // Explicitly clear ringing state to hide Ringing component and stop audio
     setCall((prev) => ({ ...prev, receiveingCall: false }));
-    
+
+    const localStream = await setupMedia(call.callType || "video");
+    if (!localStream) {
+      setCallAccepted(false);
+      setShow(false);
+      setCall((prev) => ({ ...prev, receiveingCall: true }));
+      return;
+    }
+
+    enableMedia(localStream);
+
     // Update refs immediately to ensure upcoming peer signals route correctly
     callAcceptedRef.current = true;
     peerSocketRef.current = call.socketId;
@@ -366,6 +384,7 @@ function Home({ socket }) {
   };
   //--end call  funcion
   const endCall = async (reason = "ended") => {
+    stopAllRingAudios();
     setShow(false);
     setCallAccepted(false);
     setTotalSecInCall(0);
@@ -497,11 +516,11 @@ function Home({ socket }) {
   }, [dispatch, socket]);
   return (
     <>
-      <div className="h-screen dark:bg-[#0b141a] flex overflow-hidden">
-        <div className="w-full h-screen flex flex-col md:flex-row gap-0">
+      <div className="h-[100dvh] dark:bg-[#0b141a] flex overflow-hidden">
+        <div className="w-full h-[100dvh] flex flex-col md:flex-row gap-0">
           {/*Sidebar*/}
           <div
-            className={`w-full md:w-[380px] lg:w-[420px] md:max-w-[420px] h-full ${
+            className={`w-full md:w-[380px] lg:w-[420px] md:max-w-[420px] h-full min-w-0 ${
               activeConversation?._id ? "hidden md:block" : "block"
             }`}
           >
@@ -510,7 +529,7 @@ function Home({ socket }) {
 
           {/*Chat area*/}
           <div
-            className={`w-full h-full ${
+            className={`w-full h-full min-w-0 ${
               activeConversation?._id ? "block" : "hidden md:block"
             }`}
           >

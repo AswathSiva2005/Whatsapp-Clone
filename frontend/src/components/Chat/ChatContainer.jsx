@@ -108,7 +108,7 @@ function ChatContainer({ onlineUsers, typing, callUser, socket, onBack }) {
           />
         )}
         {isBlocked || isUserBlockedMe ? (
-          <div className="h-[calc(100vh-60px-40px)] flex flex-col items-center justify-center bg-dark_bg_1">
+          <div className="h-[calc(100dvh-60px-40px)] flex flex-col items-center justify-center bg-dark_bg_1">
             <div className="text-center">
               <p className="text-dark_text_1 text-lg mb-4">
                 {isBlocked
