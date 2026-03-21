@@ -299,6 +299,60 @@ A: Sockets are best for real-time updates. REST is needed for persistence and in
 
 A: Backend checks conversation participants before serving or updating messages. Unauthorized users get forbidden errors.
 
+---
+
+## 16. Recent Fixes & Improvements (Call Feature & Responsiveness)
+
+### Call Audio Fix (Ringtone Stop on Accept)
+
+- **Problem:** Ringtone continued playing after user attended call
+- **Solution:**
+  - Added immediate audio pause in both Ringing component (incoming) and Call component (outgoing)
+  - Implemented `stopAllRingAudios()` utility that finds and stops all ring/ringback audio elements
+  - Added global guard at app root level that stops ring audio on:
+    - Route navigation
+    - Window blur/focus loss
+    - Tab visibility change
+    - Page hide/unload events
+- **Files Updated:** App.js, Call.jsx, Ringing.jsx, home.js
+
+### Call UI Status Fix
+
+- **Problem:** Call screen still showed "Ringing..." text after call was accepted
+- **Solution:**
+  - Modified CallArea status logic to show "Ringing..." only when call not accepted
+  - Added "Connecting..." state right after accept
+  - Fixed CallTimes timer from recursive setTimeout to setInterval with proper cleanup
+- **Files Updated:** CallArea.jsx, CallTimes.jsx
+
+### Mobile Responsiveness
+
+- **Problem:** App was not fully responsive on mobile devices (fixed heights, rigid widths)
+- **Solution:**
+  - Switched all `100vh` to `100dvh` (dynamic viewport height) for mobile browser compatibility
+  - Made call modal scale properly on small screens (calc(100vw-24px) with max-width)
+  - Incoming call popup now responsive with scaled images and text wrapping
+  - Added small-screen media queries for video sizes and scrollbar heights
+  - Improved settings page layout for mobile with adaptive spacing and header sizing
+  - Settings page uses min-h-[100dvh] instead of fixed h-screen
+- **Files Updated:** index.css, home.js, ChatContainer.jsx, Call.jsx, Ringing.jsx, settings.js
+
+### Sidebar UI Polish
+
+- **Problem:** Horizontal scrollbar visible under filter chips (All/Unread/Groups/Favorites)
+- **Solution:**
+  - Removed visible scrollbar indicator while keeping horizontal scroll functionality
+  - Used Tailwind utilities: `[scrollbar-width:none]` and `[&::-webkit-scrollbar]:hidden`
+- **Files Updated:** Search.jsx
+
+### Summary of UX Improvements
+
+✅ Ringtone stops immediately on call accept (no lingering audio)
+✅ Call status displays correctly after connection
+✅ App works on all device sizes (mobile-first responsive)
+✅ Cleaner sidebar UI without moving scrollbar bar
+✅ Better mobile viewport handling for browser address bar
+
 ## Q4: How do delivered/read ticks work?
 
 A: On receiving/opening messages, client emits delivered/read events. Backend updates message status and notifies sender.
