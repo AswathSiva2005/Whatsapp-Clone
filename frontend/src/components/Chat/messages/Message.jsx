@@ -1,6 +1,6 @@
 import moment from "moment";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import TraingleIcon from "../../../svg/triangle";
 import { SingleTickIcon, SeenIcon } from "../../../svg";
@@ -14,9 +14,49 @@ export default function Message({ message, me, highlights = [] }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const [showActions, setShowActions] = useState(false);
+  const longPressTimer = useRef(null);
+  const menuRef = useRef(null);
   const isStarred = (message.starredBy || []).some(
     (id) => String(id) === String(user._id)
   );
+
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      setShowActions(true);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+  };
+
+  const handleMessageClick = (e) => {
+    e.stopPropagation();
+    setShowActions((prev) => !prev);
+  };
+
+  const handleMenuClick = (e) => {
+    e.stopPropagation();
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowActions(false);
+      }
+    };
+
+    if (showActions) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showActions]);
 
   const toggleStarMessage = async () => {
     const confirmText = isStarred
@@ -180,7 +220,9 @@ export default function Message({ message, me, highlights = [] }) {
           className={`relative h-full dark:text-dark_text_1 p-2 rounded-lg
         ${me ? "bg-green_3" : "dark:bg-dark_bg_2"}
         `}
-          onClick={() => setShowActions((prev) => !prev)}
+          onClick={handleMessageClick}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {/*Message*/}
           <p className="float-left h-full text-sm pb-4 pr-8 break-words">
@@ -219,11 +261,18 @@ export default function Message({ message, me, highlights = [] }) {
           ) : null}
 
           {showActions && (
-            <div className="absolute right-0 -top-28 dark:bg-dark_bg_2 border dark:border-dark_border_2 rounded-md shadow-md z-40 min-w-[170px]">
+            <div 
+              ref={menuRef}
+              onClick={handleMenuClick}
+              className="absolute right-0 top-full mt-1 dark:bg-dark_bg_2 border dark:border-dark_border_2 rounded-md shadow-lg z-50 min-w-[170px]"
+            >
               <button
                 type="button"
                 className="w-full text-left px-3 py-2 text-sm hover:dark:bg-dark_bg_3"
-                onClick={toggleStarMessage}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleStarMessage();
+                }}
               >
                 {isStarred ? "Unstar message" : "Star message"}
               </button>
@@ -231,7 +280,10 @@ export default function Message({ message, me, highlights = [] }) {
                 <button
                   type="button"
                   className="w-full text-left px-3 py-2 text-sm text-orange-400 hover:dark:bg-dark_bg_3"
-                  onClick={deleteMessageForEveryone}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteMessageForEveryone();
+                  }}
                 >
                   Delete for everyone
                 </button>
@@ -239,7 +291,10 @@ export default function Message({ message, me, highlights = [] }) {
               <button
                 type="button"
                 className="w-full text-left px-3 py-2 text-sm text-[#f15c6d] hover:dark:bg-dark_bg_3"
-                onClick={deleteMessage}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteMessage();
+                }}
               >
                 Delete message
               </button>

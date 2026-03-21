@@ -92,6 +92,71 @@
     right: 8px;
     bottom: 8px;
   }
+
+  /* Mobile-specific responsive utilities */
+  .btn {
+    @apply w-[36px] h-[36px];
+  }
+
+  .textPrimary {
+    font-size: 14px;
+    line-height: 19px;
+  }
+
+  .textSecondary {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .p16 {
+    @apply px-[12px];
+  }
+
+  .container {
+    width: calc(100% - 16px);
+  }
+
+  /* Better spacing for mobile */
+  .gap-x-4 {
+    @apply gap-x-2;
+  }
+
+  .gap-x-2 {
+    @apply gap-x-1;
+  }
+
+  /* Message styling for mobile */
+  .max-w-xs {
+    max-width: calc(100% - 12px);
+  }
+
+  /* Settings panel mobile responsive */
+  .settingsPanel {
+    width: 100% !important;
+  }
+
+  /* Chat header mobile responsive */
+  .chatHeaderContainer {
+    padding: 8px 12px;
+  }
+
+  /* Input area mobile responsive */
+  .messageInputContainer {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  /* Contact drawer mobile responsive */
+  .contactDrawer {
+    width: 100% !important;
+    max-width: 100vw;
+  }
+
+  /* Modal/Drawer responsive */
+  .modalContent {
+    width: 95vw;
+    max-width: 95vw;
+  }
 }
 
 /*----Animations----*/

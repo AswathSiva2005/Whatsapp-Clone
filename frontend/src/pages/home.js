@@ -526,7 +526,7 @@ function Home({ socket }) {
         const notification = new Notification(senderName, {
           body,
           icon,
-          tag: `message-${conversationId}`,
+          tag: `message-${message._id}`,
         });
         notification.onclick = () => {
           window.focus();
