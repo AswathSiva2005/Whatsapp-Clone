@@ -29,6 +29,50 @@ Frontend runs on http://localhost:3000
 - Database: MongoDB
 
 
+
+## Environment Variables
+### Backend (.env inside backend folder)
+
+Create backend/.env with:
+
+```env
+PORT=8000
+NODE_ENV=development
+
+# MongoDB
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>/<db-name>
+# OR
+DATABASE_URL=mongodb+srv://<username>:<password>@<cluster>/<db-name>
+
+# JWT secrets
+ACCESS_TOKEN_SECRET=replace_with_secure_random_string
+REFRESH_TOKEN_SECRET=replace_with_secure_random_string
+
+# Frontend URL(s) allowed by CORS
+CLIENT_ENDPOINT=http://localhost:3000
+# Optional comma-separated list
+CLIENT_ENDPOINTS=http://localhost:3000,http://localhost:3002
+
+# Optional defaults
+DEFAULT_PICTURE=https://example.com/default-avatar.png
+DEFAULT_STATUS=Hey there! I am using whatsapp
+DEFAULT_GROUP_PICTURE=https://example.com/default-group.png
+
+# Optional profile upload to Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_UPLOAD_PRESET=
+```
+
+
+### Frontend (.env inside frontend folder)
+
+Create frontend/.env with:
+```env
+REACT_APP_API_ENDPOINT=http://localhost:8000/api/v1
+```
+Frontend runs on http://localhost:3000
+
+
 # WhatsApp Web Clone (Full Stack)
 
 Simplified WhatsApp Web style chat application built with:
@@ -116,50 +160,6 @@ frontend/
 - npm 10+
 - MongoDB instance (local or Atlas)
 
-## Environment Variables
-
-### Backend (.env inside backend folder)
-
-Create backend/.env with:
-
-```env
-PORT=8000
-NODE_ENV=development
-
-# MongoDB
-MONGO_URI=mongodb+srv://<username>:<password>@<cluster>/<db-name>
-# OR
-DATABASE_URL=mongodb+srv://<username>:<password>@<cluster>/<db-name>
-
-# JWT secrets
-ACCESS_TOKEN_SECRET=replace_with_secure_random_string
-REFRESH_TOKEN_SECRET=replace_with_secure_random_string
-
-# Frontend URL(s) allowed by CORS
-CLIENT_ENDPOINT=http://localhost:3000
-# Optional comma-separated list
-CLIENT_ENDPOINTS=http://localhost:3000,http://localhost:3002
-
-# Optional defaults
-DEFAULT_PICTURE=https://example.com/default-avatar.png
-DEFAULT_STATUS=Hey there! I am using whatsapp
-DEFAULT_GROUP_PICTURE=https://example.com/default-group.png
-
-# Optional profile upload to Cloudinary
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_UPLOAD_PRESET=
-```
-
-### Frontend (.env inside frontend folder)
-
-Create frontend/.env with:
-
-```env
-REACT_APP_API_ENDPOINT=http://localhost:8000/api/v1
-```
-
-
-Frontend runs on http://localhost:3000
 
 ## Basic Usage
 
