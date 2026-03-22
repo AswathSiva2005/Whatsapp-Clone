@@ -1,8 +1,11 @@
+## GitHub Repository
 Github - https://github.com/AswathSiva2005/Whatsapp-Clone.git
+
+## Live Demo
 Demo Link - https://aswath-whatsapp-clone.vercel.app/
 
 
-
+## Run Locally
 ### 1. Start backend
 ```bash
 cd backend
@@ -19,6 +22,11 @@ npm start
 ```
 Frontend runs on http://localhost:3000
 
+
+## Tech Stack
+- Frontend: React, Redux Toolkit, Socket.IO Client
+- Backend: Node.js, Express, Socket.IO
+- Database: MongoDB
 
 
 # WhatsApp Web Clone (Full Stack)
@@ -150,25 +158,6 @@ Create frontend/.env with:
 REACT_APP_API_ENDPOINT=http://localhost:8000/api/v1
 ```
 
-## Run Locally
-
-### 1. Start backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Backend runs on http://localhost:8000
-
-### 2. Start frontend
-
-```bash
-cd frontend
-npm install
-npm start
-```
 
 Frontend runs on http://localhost:3000
 
