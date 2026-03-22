@@ -1,6 +1,26 @@
 Github - https://github.com/AswathSiva2005/Whatsapp-Clone.git
 Demo Link - https://aswath-whatsapp-clone.vercel.app/
 
+
+
+### 1. Start backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+Backend runs on http://localhost:8000
+
+### 2. Start frontend
+```bash
+cd frontend
+npm install
+npm start
+```
+Frontend runs on http://localhost:3000
+
+
+
 # WhatsApp Web Clone (Full Stack)
 
 Simplified WhatsApp Web style chat application built with:
