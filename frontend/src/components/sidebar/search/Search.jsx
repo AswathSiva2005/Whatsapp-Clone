@@ -16,8 +16,6 @@ export default function Search({
   activeView,
   setActiveView,
   unreadChatsCount,
-  pinnedCount,
-  archivedCount,
 }) {
   const { user } = useSelector((state) => state.user);
   const { token } = user;
@@ -129,26 +127,6 @@ export default function Search({
             </button>
             <button
               className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
-                activeView === "pinned"
-                  ? "bg-green_2 text-[#0b141a]"
-                  : "border dark:border-[#2f3b44] dark:text-dark_text_2"
-              }`}
-              onClick={() => setActiveView("pinned")}
-            >
-              {`Pinned ${pinnedCount}`}
-            </button>
-            <button
-              className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
-                activeView === "archived"
-                  ? "bg-green_2 text-[#0b141a]"
-                  : "border dark:border-[#2f3b44] dark:text-dark_text_2"
-              }`}
-              onClick={() => setActiveView("archived")}
-            >
-              {`Archived ${archivedCount}`}
-            </button>
-            <button
-              className={`px-3 h-7 rounded-full text-xs font-semibold whitespace-nowrap ${
                 activeView === "groups"
                   ? "bg-green_2 text-[#0b141a]"
                   : "border dark:border-[#2f3b44] dark:text-dark_text_2"
@@ -156,9 +134,6 @@ export default function Search({
               onClick={() => setActiveView("groups")}
             >
               Groups
-            </button>
-            <button className="w-7 h-7 rounded-full border dark:border-[#2f3b44] dark:text-dark_text_2 text-xs">
-              ▾
             </button>
           </div>
         </div>

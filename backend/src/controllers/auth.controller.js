@@ -176,7 +176,7 @@ export const uploadRegisterPicture = async (req, res, next) => {
         (Array.isArray(forwardedProto)
           ? forwardedProto[0]
           : String(forwardedProto || "").split(",")[0]) || req.protocol;
-      const normalizedProtocol = protocol === "http" ? "https" : protocol;
+      const normalizedProtocol = protocol || "http";
       const fileUrl = `${normalizedProtocol}://${req.get("host")}/uploads/${fileName}`;
 
       res.status(200).json({

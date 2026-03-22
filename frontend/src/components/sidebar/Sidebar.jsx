@@ -51,9 +51,6 @@ export default function Sidebar({ onlineUsers, typing }) {
     const unreadCount = unreadByConversation[conversation._id] || 0;
     return count + (unreadCount > 0 ? 1 : 0);
   }, 0);
-
-  const pinnedCount = pinnedConversationIds.length;
-  const archivedCount = archivedConversationIds.length;
   const mutedConversationIds = user?.notificationSettings?.mutedConversations || [];
 
   useEffect(() => {
@@ -207,8 +204,6 @@ export default function Sidebar({ onlineUsers, typing }) {
               activeView={activeView}
               setActiveView={setActiveView}
               unreadChatsCount={unreadChatsCount}
-              pinnedCount={pinnedCount}
-              archivedCount={archivedCount}
             />
             {searchResults.length > 0 ? (
               <SearchResults

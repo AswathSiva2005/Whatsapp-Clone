@@ -38,6 +38,7 @@ export const getStatusFeed = async ({ userId }) => {
 
   const activeStatuses = await StatusModel.find({ expiresAt: { $gt: now } })
     .populate("user", "name picture status blockedUsers")
+    .populate("likes", "name picture status")
     .sort({ createdAt: -1 });
 
   const currentUser = await UserModel.findById(userId).select("blockedUsers");
@@ -63,7 +64,15 @@ export const getStatusFeed = async ({ userId }) => {
       text: status.text,
       mediaUrl: status.mediaUrl,
       mediaType: status.mediaType,
-      likes: status.likes,
+      likes: (status.likes || []).map((likedUser) =>
+        toObjectIdString(likedUser?._id || likedUser)
+      ),
+      likesDetailed: (status.likes || []).map((likedUser) => ({
+        _id: likedUser?._id || likedUser,
+        name: likedUser?.name || "",
+        picture: likedUser?.picture || "",
+        status: likedUser?.status || "",
+      })),
       viewers: status.viewers,
       replies: status.replies,
       expiresAt: status.expiresAt,

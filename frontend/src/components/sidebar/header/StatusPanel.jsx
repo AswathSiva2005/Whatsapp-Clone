@@ -4,7 +4,10 @@ import axios from "axios";
 import moment from "moment";
 import { CloseIcon } from "../../../svg";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
+import { resolveApiEndpoint, resolveMediaUrl } from "../../../utils/mediaUrl";
 import StatusViewer from "./StatusViewer";
+
+const API_ENDPOINT = resolveApiEndpoint();
 
 export default function StatusPanel({
   setShowStatusPanel,
@@ -23,11 +26,17 @@ export default function StatusPanel({
     statuses: [],
     initialIndex: 0,
   });
+  const [likersModal, setLikersModal] = useState({ open: false, users: [] });
 
   const fetchStatuses = useCallback(async () => {
+    if (!user?.token) {
+      setStatusFeed({ mine: [], feed: [] });
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data } = await axios.get(`${process.env.REACT_APP_API_ENDPOINT}/status`, {
+      const { data } = await axios.get(`${API_ENDPOINT}/status`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -68,12 +77,17 @@ export default function StatusPanel({
       let mediaUrl = "";
       let mediaType = "text";
 
+      if (!user?.token) {
+        alert("Please login again.");
+        return;
+      }
+
       if (imageFile) {
         const formData = new FormData();
         formData.append("file", imageFile);
 
         const uploadResponse = await axios.post(
-          `${process.env.REACT_APP_API_ENDPOINT}/user/upload`,
+          `${API_ENDPOINT}/user/upload`,
           formData,
           {
             headers: {
@@ -82,12 +96,15 @@ export default function StatusPanel({
           }
         );
 
-        mediaUrl = uploadResponse.data.url;
+        mediaUrl =
+          uploadResponse?.data?.secure_url ||
+          uploadResponse?.data?.url ||
+          "";
         mediaType = "image";
       }
 
       await axios.post(
-        `${process.env.REACT_APP_API_ENDPOINT}/status`,
+        `${API_ENDPOINT}/status`,
         {
           text: text.trim(),
           mediaUrl,
@@ -113,8 +130,13 @@ export default function StatusPanel({
 
   const deleteStatus = async (statusId) => {
     if (!window.confirm("Delete this status?")) return;
+    if (!user?.token) {
+      alert("Please login again.");
+      return;
+    }
+
     try {
-      await axios.delete(`${process.env.REACT_APP_API_ENDPOINT}/status/${statusId}`, {
+      await axios.delete(`${API_ENDPOINT}/status/${statusId}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
@@ -173,6 +195,11 @@ export default function StatusPanel({
       ...prev,
       statuses: prev.statuses.map(updater),
     }));
+  };
+
+  const getLikedUsers = (status) => {
+    if (!Array.isArray(status?.likesDetailed)) return [];
+    return status.likesDetailed;
   };
 
   return (
@@ -237,24 +264,57 @@ export default function StatusPanel({
           ) : (
             <div className="space-y-2">
               {statusFeed.mine.map((status, idx) => (
-                <div key={status._id} className="flex items-center justify-between dark:bg-dark_bg_2 rounded-md p-2">
-                  <button
-                    className="text-left flex-1"
-                    onClick={() => openViewer(statusFeed.mine, idx)}
-                  >
-                    <p className="dark:text-dark_text_1 text-sm">
-                      {status.text || "Image status"}
-                    </p>
-                    <p className="dark:text-dark_text_2 text-xs">
-                      {moment(status.createdAt).fromNow()}
-                    </p>
-                  </button>
-                  <button
-                    className="text-xs text-[#f15c6d] px-2 py-1"
-                    onClick={() => deleteStatus(status._id)}
-                  >
-                    Delete
-                  </button>
+                <div key={status._id} className="dark:bg-dark_bg_2 rounded-md p-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      className="text-left flex-1 flex items-center gap-3"
+                      onClick={() => openViewer(statusFeed.mine, idx)}
+                    >
+                      {status.mediaType === "image" && status.mediaUrl ? (
+                        <img
+                          src={resolveMediaUrl(status.mediaUrl)}
+                          alt="status"
+                          className="w-12 h-12 rounded-md object-cover"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = getTwoLetterAvatarUrl("Status");
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-md bg-dark_bg_3 flex items-center justify-center text-white text-xs px-1 text-center">
+                          {status.text ? "Text" : "Status"}
+                        </div>
+                      )}
+                      <div>
+                        <p className="dark:text-dark_text_1 text-sm">
+                          {status.text || "Image status"}
+                        </p>
+                        <p className="dark:text-dark_text_2 text-xs">
+                          {moment(status.createdAt).fromNow()}
+                        </p>
+                      </div>
+                    </button>
+                    <button
+                      className="text-xs text-[#f15c6d] px-2 py-1"
+                      onClick={() => deleteStatus(status._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center justify-start">
+                    <button
+                      className="text-xs dark:text-dark_text_1 px-2 py-1 rounded-full bg-dark_bg_3 flex items-center gap-2"
+                      onClick={() =>
+                        setLikersModal({
+                          open: true,
+                          users: getLikedUsers(status),
+                        })
+                      }
+                    >
+                      <span>♡</span>
+                      <span>{Array.isArray(status.likes) ? status.likes.length : 0}</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -304,6 +364,45 @@ export default function StatusPanel({
           onClose={() => setViewerState({ open: false, statuses: [], initialIndex: 0 })}
           onStatusUpdated={updateStatusLikeInState}
         />
+      )}
+
+      {likersModal.open && (
+        <div className="fixed inset-0 z-[95] bg-black/70 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-xl bg-dark_bg_2 border dark:border-dark_border_2 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm dark:text-dark_text_1 font-semibold">Liked by</h3>
+              <button className="btn" onClick={() => setLikersModal({ open: false, users: [] })}>
+                <CloseIcon className="fill-dark_svg_1" />
+              </button>
+            </div>
+            {likersModal.users.length === 0 ? (
+              <p className="text-sm dark:text-dark_text_2">No likes yet.</p>
+            ) : (
+              <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                {likersModal.users.map((likedUser) => (
+                  <div
+                    key={likedUser._id}
+                    className="flex items-center gap-3 dark:bg-dark_bg_3 rounded-md p-2"
+                  >
+                    <img
+                      src={likedUser.picture || getTwoLetterAvatarUrl(likedUser.name)}
+                      alt={likedUser.name || "User"}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = getTwoLetterAvatarUrl(likedUser.name);
+                      }}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-sm dark:text-dark_text_1">{likedUser.name || "User"}</p>
+                      <p className="text-xs dark:text-dark_text_2">{likedUser.status || ""}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </>
   );
