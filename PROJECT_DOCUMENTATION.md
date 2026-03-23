@@ -1,55 +1,40 @@
-# PROJECT_DOCUMENTATION.md
+# Project Documentation
 
-## 1. Project Overview
+## 1. Overview
 
-This project is a full-stack WhatsApp Web style clone built with the MERN ecosystem and Socket.IO.
+This project is a full-stack WhatsApp Web style clone built with React, Node.js, MongoDB, and Socket.IO.
 
-It supports:
+Implemented capabilities include:
 
 - Authentication (register, login, refresh token, logout)
-- 1:1 chat and group chat
-- Real-time messaging and typing indicators
-- Message delivery/read updates
-- Message star/unstar and delete
+- One-to-one and group messaging
+- Real-time messaging, typing, delivery/read updates
+- Starred messages, delete for self, delete for everyone
 - Poll messages and voting
-- Disappearing messages (timed auto-delete)
-- Status/stories (24-hour lifecycle)
+- Disappearing messages
+- Status/stories lifecycle
 - Audio/video call signaling with call history
-- Profile management, app lock (PIN), and notification controls
-- File/image upload with Cloudinary + backend fallback
+- Profile management, app lock, notification settings
+- File and image upload with Cloudinary + backend fallback
 
----
+## 2. Architecture Summary
 
-## 2. Tech Stack
+### 2.1 Backend runtime flow
 
-### Frontend
+1. Load environment variables and validate DB URI.
+2. Connect to MongoDB.
+3. Start Express HTTP server.
+4. Attach Socket.IO to same HTTP server.
+5. Mount routes under /api/v1 and compatibility root mount.
 
-- React 18
-- Redux Toolkit
-- React Router v6
-- Axios
-- Socket.IO Client
-- Tailwind CSS
-- simple-peer (WebRTC peer connection)
-- react-easy-crop (profile image crop)
+### 2.2 Frontend runtime flow
 
-### Backend
+1. Initialize Redux store with session persistence.
+2. Verify access token by calling backend API.
+3. Connect Socket.IO after auth state is available.
+4. Render sidebar/chat panels and live event updates.
 
-- Node.js + Express
-- MongoDB + Mongoose
-- Socket.IO
-- JWT (access + refresh token)
-- bcrypt
-- express-fileupload
-- helmet, cors, express-mongo-sanitize, compression
-
-### Database
-
-- MongoDB Atlas/local MongoDB
-
----
-
-## 3. Repository Structure
+## 3. Repository Layout
 
 ```text
 backend/
@@ -75,569 +60,385 @@ frontend/
     utils/
 ```
 
----
+## 4. Backend Modules
 
-## 4. Runtime Architecture
+### 4.1 Core app setup
 
-## 4.1 Backend startup flow
+- backend/src/index.js
+  - Mongo connection, HTTP boot, Socket.IO setup
+- backend/src/app.js
+  - middleware stack, CORS, route binding, error handling
+  - static /uploads serving
 
-1. Load env config and validate DB URI.
-2. Connect MongoDB.
-3. Start Express HTTP server.
-4. Attach Socket.IO on same server.
-5. Configure CORS and security middleware.
-6. Expose REST APIs at `/api/v1`.
+Security middleware:
 
-## 4.2 Frontend startup flow
+- helmet
+- express-mongo-sanitize
+- cookie-parser
+- compression
+- cors
 
-1. Redux store initializes (session persistence enabled).
-2. App verifies token by calling conversation API.
-3. If token valid, app routes to home.
-4. Socket connects and user joins personal room.
-5. UI listens to real-time events for message/call updates.
+CORS and Image Serving:
 
----
+- helmet() configured with crossOriginResourcePolicy: { policy: "cross-origin" }
+- Prevents CORS blocking of images between frontend (localhost:3000) and backend (localhost:5001)
+- /uploads directory is public and CORS-compatible for avatar and file rendering
 
-## 5. Backend Modules
-
-## 5.1 Entry and app configuration
-
-- `backend/src/index.js`
-  - Mongo connection
-  - HTTP server
-  - Socket.IO server setup
-  - Origin allowlist + preview domain logic
-- `backend/src/app.js`
-  - Middleware stack
-  - CORS and helmet config
-  - `/uploads` static serving
-  - health endpoint `/`
-  - route binding and error handling
-
-Security-related middleware:
-
-- `helmet`
-- `express-mongo-sanitize`
-- `cookie-parser`
-- `compression`
-- `cors`
-
-Important implementation detail:
-
-- `crossOriginResourcePolicy` is set to `cross-origin` to allow uploaded avatars/media to render across frontend-backend origins.
-
-## 5.2 Authentication module
+### 4.2 Auth module
 
 Files:
 
-- `backend/src/routes/auth.route.js`
-- `backend/src/controllers/auth.controller.js`
-- `backend/src/services/auth.service.js`
-- `backend/src/services/token.service.js`
-- `backend/src/middlewares/authMiddleware.js`
-
-Features:
-
-- Register user
-- Login user
-- Refresh token using secure cookie
-- Logout (clear refresh token cookie)
-- Register-time profile image upload
+- backend/src/routes/auth.route.js
+- backend/src/controllers/auth.controller.js
+- backend/src/services/auth.service.js
+- backend/src/services/token.service.js
+- backend/src/middlewares/authMiddleware.js
 
 Token strategy:
 
-- Access token: short-lived JWT
-- Refresh token: longer-lived JWT in HTTP-only cookie path `/api/v1/auth/refreshtoken`
+- Access token via JWT in Authorization header
+- Refresh token via HTTP-only cookie on /api/v1/auth/refreshtoken
 
-## 5.3 User module
-
-Files:
-
-- `backend/src/routes/user.route.js`
-- `backend/src/controllers/user.controller.js`
-- `backend/src/services/user.service.js`
-
-Features:
-
-- Search users by keyword
-- Search user by phone number
-- Update profile (name, status, picture)
-- Block/unblock users
-- Upload profile picture
-- App lock config and PIN verification
-- Notification settings
-  - mute all notifications
-  - mute login notifications
-  - mute per-conversation
-
-Upload behavior:
-
-- Tries Cloudinary if env config exists.
-- Falls back to local file storage in `/uploads` if Cloudinary unavailable.
-
-## 5.4 Conversation module
+### 4.3 User module
 
 Files:
 
-- `backend/src/routes/conversation.route.js`
-- `backend/src/controllers/conversation.controller.js`
-- `backend/src/services/conversation.service.js`
+- backend/src/routes/user.route.js
+- backend/src/controllers/user.controller.js
+- backend/src/services/user.service.js
 
 Features:
 
-- Create/open 1:1 conversation
-- Get all user conversations
-- Group chat lifecycle:
-  - create group
-  - fetch group details
-  - update group info
-  - add members
-  - remove members
-  - exit group
-- Per-user disappearing message settings (`off` or `timed` with seconds)
-- Clear chat (delete all messages in conversation)
-- Delete conversation
+- user search by text and phone
+- profile update
+- block/unblock
+- app lock PIN config/verify
+- notification settings including per-conversation mute
+- profile upload with Cloudinary fallback to local files
 
-Group permission rules:
-
-- Only group admin can update group details or add members.
-- Admin or self can remove member.
-- Admin transfers when current admin exits/removed.
-
-## 5.5 Message module
+### 4.4 Conversation module
 
 Files:
 
-- `backend/src/routes/message.route.js`
-- `backend/src/controllers/message.controller.js`
-- `backend/src/services/message.service.js`
+- backend/src/routes/conversation.route.js
+- backend/src/controllers/conversation.controller.js
+- backend/src/services/conversation.service.js
 
 Features:
 
-- Send message with text/files/poll
-- Get conversation messages
-- Toggle star/unstar
-- Delete message for self
-- Delete message for everyone
-- Get starred messages
-- Vote in poll message
+- open/create direct conversation
+- list conversations
+- full group lifecycle (create/update/add/remove/exit)
+- disappearing-message per-user settings
+- clear/delete conversation
 
-Behavior details:
+Rules:
 
-- Validates participant membership before send.
-- Applies disappearing-message timer to new message if sender has timed mode enabled.
-- Updates conversation `latestMessage` after send.
+- only group admin can update group/add members
+- admin or self can remove member
+- admin transfer when required
 
-## 5.6 Status module (stories)
+Data consistency:
+
+- picture field optional; defaults to empty string for direct conversations
+- orphan direct conversations filtered on fetch (when counterpart user is deleted)
+- conversation list excludes deleted-user chats automatically
+
+### 4.5 Message module
 
 Files:
 
-- `backend/src/routes/status.route.js`
-- `backend/src/controllers/status.controller.js`
-- `backend/src/services/status.service.js`
+- backend/src/routes/message.route.js
+- backend/src/controllers/message.controller.js
+- backend/src/services/message.service.js
 
 Features:
 
-- Create status (text/image)
-- Get status feed
-- Like/unlike status
-- Reply to status
-- Mark status as viewed
-- Delete own status
+- send messages (text/files/poll)
+- fetch conversation messages
+- star/unstar
+- delete for self and everyone
+- starred list
+- poll vote
 
-Lifecycle:
-
-- Status expires automatically using TTL index (`expiresAt`).
-
-## 5.7 Call module
+### 4.6 Status module
 
 Files:
 
-- `backend/src/routes/call.route.js`
-- `backend/src/controllers/call.controller.js`
-- `backend/src/models/callModel.js`
+- backend/src/routes/status.route.js
+- backend/src/controllers/status.controller.js
+- backend/src/services/status.service.js
 
 Features:
 
-- Start call (audio/video)
-- Accept call
-- End call with reason and duration
-- Get call history
-- Delete call record
+- create/view/like/reply/delete status
+- TTL-based expiry
 
-Status model:
+### 4.7 Call module
 
-- `ringing`, `accepted`, `completed`, `rejected`, `missed`, `cancelled`
+Files:
 
----
+- backend/src/routes/call.route.js
+- backend/src/controllers/call.controller.js
+- backend/src/models/callModel.js
 
-## 6. Socket.IO Real-Time Layer
+Features:
+
+- start/accept/end calls
+- call history list and delete
+
+## 5. Socket.IO Layer
 
 File:
 
-- `backend/src/SocketServer.js`
+- backend/src/SocketServer.js
 
-Implemented events:
+Key events:
 
-- `join`
-- `get-online-users`
-- `setup socket`
-- `join conversation`
-- `send message`
-- `receive message`
-- `typing`
-- `stop typing`
-- `message delivered`
-- `message read`
-- `call user`
-- `answer call`
-- `call accepted`
-- `webrtc signal`
-- `end call`
-- `switch to video`
+- user/session setup and online tracking
+- join conversation rooms
+- send/receive message
+- typing/stop typing
+- message delivered/read
+- call signaling events
 
-Real-time behavior highlights:
+## 6. Data Models
 
-- Multi-session user support (same user can have multiple active sockets).
-- Blocked-user filtering before message delivery.
-- Active call map used to coordinate and clean call state on disconnect.
+### 6.1 User
 
----
+- identity: name, email, phone
+- profile: picture, status
+- security/settings: blockedUsers, app lock, notification settings
 
-## 7. Data Models
-
-## 7.1 User
-
-Main fields:
-
-- name, email, phone, picture, status, password
-- blockedUsers[]
-- appLockEnabled, appLockPinHash
-- notificationSettings
-
-## 7.2 Conversation
-
-Main fields:
+### 6.2 Conversation
 
 - name, picture, description
-- isGroup
-- users[]
-- admin (group)
-- latestMessage
-- disappearingSettings[] (per-user mode and seconds)
+- isGroup, users, admin, latestMessage
+- disappearingSettings per user
 
-## 7.3 Message
-
-Main fields:
+### 6.3 Message
 
 - sender, message, conversation
-- files[]
-- poll { question, options, votes, allowMultipleAnswers }
-- expiresAt (TTL for disappearing)
-- status (`sent|delivered|read`)
-- starredBy[]
-- deletedFor[]
-- isDeletedForEveryone
+- files, poll, status
+- starredBy, deletedFor, isDeletedForEveryone
+- expiresAt for disappearing behavior
 
-## 7.4 Status
+### 6.4 Status
 
-Main fields:
+- user, text/media, likes/viewers/replies, expiresAt
 
-- user, text, mediaUrl, mediaType
-- likes[], viewers[], replies[]
-- expiresAt (24-hour TTL)
+### 6.5 Call
 
-## 7.5 Call
+- participants, type, status, timing metadata
 
-Main fields:
+## 7. Frontend Modules
 
-- conversation, caller, receiver
-- type (`audio|video`)
-- status
-- startedAt, endedAt, durationSeconds
-
----
-
-## 8. Frontend Modules
-
-## 8.1 App shell and routing
+### 7.1 App shell
 
 Files:
 
-- `frontend/src/App.js`
-- `frontend/src/index.js`
-- `frontend/src/app/store.js`
+- frontend/src/App.js
+- frontend/src/index.js
+- frontend/src/app/store.js
 
-Routes:
+Features:
 
-- `/` home chat screen (protected)
-- `/login`
-- `/register`
-- `/settings` (protected)
-- `/unlock` (protected when app lock enabled)
+- protected routes
+- session-persisted Redux state
+- startup token validation
 
-State architecture:
-
-- Redux Toolkit for `user` + `chat`
-- Session persistence with `redux-persist` (session storage)
-
-## 8.2 User/auth state module
+### 7.2 User state
 
 File:
 
-- `frontend/src/features/userSlice.js`
+- frontend/src/features/userSlice.js
 
-Responsibilities:
-
-- register/login async thunks
-- store authenticated user and token
-- app-lock and notification settings in state
-- logout/reset state
-
-## 8.3 Chat state module
+### 7.3 Chat state
 
 File:
 
-- `frontend/src/features/chatSlice.js`
+- frontend/src/features/chatSlice.js
 
-Responsibilities:
-
-- fetch conversations
-- open/create conversation
-- fetch/send messages
-- create/update group
-- add/remove/exit group members
-- disappearing settings update
-- poll voting
-- unread tracking
-- pinned/archived conversation states
-- local message status updates and star toggles
-
-## 8.4 Home page and call integration
-
-File:
-
-- `frontend/src/pages/home.js`
-
-Responsibilities:
-
-- socket registration and event handlers
-- online users and typing state
-- incoming/outgoing call flow
-- call accept/end/switch-to-video flow
-- message notification handling
-- chat layout orchestration (sidebar + chat container)
-
-## 8.5 Sidebar and panels
+### 7.4 Sidebar and chat UI
 
 Important files:
 
-- `frontend/src/components/sidebar/Sidebar.jsx`
-- `frontend/src/components/sidebar/calls/CallHistoryPanel.jsx`
-- `frontend/src/components/sidebar/header/StatusPanel` (status feature)
+- frontend/src/components/sidebar/Sidebar.jsx
+- frontend/src/components/sidebar/conversations/Conversations.jsx
+- frontend/src/components/Chat/messages/Message.jsx
+- frontend/src/components/Chat/header/ContactInfoDrawer.jsx
 
-Responsibilities:
-
-- conversations list and search
-- archived and pinned handling
-- status panel and call history panel
-- fetch and delete call history
-
-## 8.6 Settings and unlock pages
-
-Files:
-
-- `frontend/src/pages/settings.js`
-- `frontend/src/pages/unlock.js`
-
-Settings features:
-
-- profile update
-- profile picture upload + crop
-- notification preferences sync with backend
-- app lock enable/change/disable via PIN
-
-Unlock features:
-
-- PIN verification API call
-- unlock marker in sessionStorage
-
-## 8.7 File upload utility
+### 7.5 Upload utility
 
 File:
 
-- `frontend/src/utils/upload.js`
+- frontend/src/utils/upload.js
 
 Behavior:
 
-1. Try Cloudinary upload when config is valid.
-2. If Cloudinary fails, upload to backend route (`/user/upload`).
-3. Normalize response shape for consistent UI usage.
+1. try Cloudinary upload
+2. fallback to backend /user/upload
+3. normalize payload for UI
 
----
+### 7.6 Frontend Reliability Patterns
 
-## 9. API Documentation (Implemented)
+#### Token Refresh and Retry on 401
 
-Base URL:
+Implemented across multiple request paths:
 
-- `/api/v1`
+- Message component (delete for everyone action)
+- Upload utility (group/profile image updates)
+- Chat slice thunk (group conversation updates)
+- Starred messages panel (fetch starred list)
 
-## 9.1 Auth
+Pattern:
 
-- `POST /auth/register`
-- `POST /auth/upload`
-- `POST /auth/login`
-- `POST /auth/logout`
-- `POST /auth/refreshtoken`
+1. Execute API request with access token
+2. On 401 response, POST to /auth/refreshtoken with credentials
+3. Update Redux user state with refreshed token
+4. Retry original request with new token
+5. Fallback token from sessionStorage persist if needed
 
-## 9.2 User
+#### Safe Data Access
 
-- `GET /user?search=...`
-- `GET /user/phone?phone=...`
-- `PUT /user/profile`
-- `POST /user/block`
-- `POST /user/unblock`
-- `POST /user/upload`
-- `PATCH /user/app-lock`
-- `POST /user/app-lock/verify`
-- `GET /user/notification-settings`
-- `PATCH /user/notification-settings`
-- `PATCH /user/notification-settings/conversation/:conversationId`
+- Optional chaining (?.) for nested object access
+- Default values for missing/undefined fields
+- Guards in utility functions (capitalize, etc.)
+- Prevents crashes from incomplete backend responses
 
-## 9.3 Conversation
+#### Session Persistence and Recovery
 
-- `POST /conversation`
-- `GET /conversation`
-- `POST /conversation/group`
-- `GET /conversation/group/:conversationId`
-- `PATCH /conversation/group/:conversationId`
-- `POST /conversation/group/:conversationId/members`
-- `DELETE /conversation/group/:conversationId/members/:memberId`
-- `POST /conversation/group/:conversationId/exit`
-- `PATCH /conversation/:conversationId/disappearing`
-- `POST /conversation/clear`
-- `POST /conversation/delete`
+- Redux persist saves user token to sessionStorage
+- Token fallback enables retry even if Redux state temporarily unavailable
+- Frontend detects localhost and defaults to port 5001
+- Environment variable fallback for custom API endpoints
 
-## 9.4 Message
+### 7.7 UI State Coordination
 
-- `POST /message`
-- `GET /message/starred`
-- `PATCH /message/:messageId/poll/vote`
-- `PATCH /message/:messageId/star`
-- `PATCH /message/:messageId/delete-for-everyone`
-- `DELETE /message/:messageId`
-- `GET /message/:convo_id`
+#### Message Menu Single-Open Behavior
 
-## 9.5 Status
+- Custom event "message-menu-open" fired when message menu opens
+- All other message containers listen and close their active menus
+- Data attributes (data-message-container, data-message-id) enable cross-component detection
+- Prevents multiple message menus from being open simultaneously
 
-- `POST /status`
-- `GET /status`
-- `PATCH /status/:statusId/like`
-- `POST /status/:statusId/reply`
-- `POST /status/:statusId/view`
-- `DELETE /status/:statusId`
+#### Orphan Data Filtering
 
-## 9.6 Call
+- Sidebar filters out direct conversations with deleted users
+- Matches backend filter to ensure consistency
+- Prevents phantom entries in conversation list
 
-- `GET /call`
-- `POST /call/start`
-- `PATCH /call/:callId/accept`
-- `PATCH /call/:callId/end`
-- `DELETE /call/:callId`
+## 8. API Index
 
----
+Base URL: /api/v1
 
-## 10. End-to-End Feature Flows
+### 8.1 Auth
 
-## 10.1 Register and login
+- POST /auth/register
+- POST /auth/upload
+- POST /auth/login
+- POST /auth/logout
+- POST /auth/refreshtoken
 
-1. User submits register/login form.
-2. Backend validates and authenticates credentials.
-3. Access token returned in response user object.
-4. Refresh token saved as HTTP-only cookie.
-5. Frontend stores user in Redux persisted session.
+### 8.2 User
 
-## 10.2 Open chat and send message
+- GET /user?search=...
+- GET /user/phone?phone=...
+- GET /user/list
+- PUT /user/profile
+- POST /user/block
+- POST /user/unblock
+- POST /user/upload
+- PATCH /user/app-lock
+- POST /user/app-lock/verify
+- GET /user/notification-settings
+- PATCH /user/notification-settings
+- PATCH /user/notification-settings/conversation/:conversationId
+- GET /user/contacts
+- POST /user/contacts
+- PATCH /user/contacts/:contactId/nickname
 
-1. Frontend loads conversations.
-2. User selects conversation and fetches history.
-3. User sends message via REST.
-4. Backend stores message and updates latest conversation message.
-5. Socket event broadcasts to recipient(s).
-6. Recipient UI updates instantly.
+### 8.3 Conversation
 
-## 10.3 Typing and read/delivered states
+- POST /conversation
+- GET /conversation
+- POST /conversation/group
+- GET /conversation/group/:conversationId
+- PATCH /conversation/group/:conversationId
+- POST /conversation/group/:conversationId/members
+- DELETE /conversation/group/:conversationId/members/:memberId
+- POST /conversation/group/:conversationId/exit
+- PATCH /conversation/:conversationId/disappearing
+- POST /conversation/clear
+- POST /conversation/delete
 
-1. Typing state emitted to conversation room.
-2. Receiver sees typing indicator.
-3. Delivery/read events update message status in DB and sender UI.
+### 8.4 Message
 
-## 10.4 Group management
+- POST /message
+- GET /message/starred
+- PATCH /message/:messageId/poll/vote
+- PATCH /message/:messageId/star
+- PATCH /message/:messageId/delete-for-everyone
+- DELETE /message/:messageId
+- GET /message/:convo_id
 
-1. Group created with admin and members.
-2. Admin updates details or adds members.
-3. Admin/self removes members.
-4. User can exit group; admin auto-reassignment when needed.
+### 8.5 Status
 
-## 10.5 Disappearing messages
+- POST /status
+- GET /status
+- PATCH /status/:statusId/like
+- POST /status/:statusId/reply
+- POST /status/:statusId/view
+- DELETE /status/:statusId
 
-1. User sets conversation mode to timed with seconds.
-2. New outgoing messages from that user are assigned `expiresAt`.
-3. MongoDB TTL index auto-removes expired messages.
+### 8.6 Call
 
-## 10.6 Poll messages
+- GET /call
+- POST /call/start
+- PATCH /call/:callId/accept
+- PATCH /call/:callId/end
+- DELETE /call/:callId
 
-1. Sender creates poll with 2+ options.
-2. Poll saved inside message document.
-3. Members vote through vote API.
-4. Votes update option arrays and UI reflects new state.
+## 9. Recent Fixes and Reliability Improvements
 
-## 10.7 Status/stories
+- direct conversation creation supports missing user pictures
+- orphan direct chats are filtered from sidebar if counterpart user is deleted
+- message action menu UI behavior corrected (single open at a time)
+- multiple frontend request paths now support token refresh + retry on 401
+- group profile image update flow hardened for expired access token scenarios
+- starred messages panel now refreshes token and retries fetch on 401
+- safer text formatting utility for undefined values in conversation rendering
+- removed New community option from sidebar menu UI
+- CORS configuration in helmet prevents image serving blocking
+- session persistence enables token recovery after page refresh
+- data access patterns use optional chaining and default values
+- API endpoint auto-detection on localhost with environment variable fallback
 
-1. User creates text/image status.
-2. Feed displays active statuses.
-3. Other users can view, like, reply.
-4. TTL removes expired statuses automatically.
+## 10. Environment Variables
 
-## 10.8 Audio/video call
+### 10.1 Backend (backend/.env)
 
-1. Caller creates call record via `/call/start`.
-2. Socket `call user` sends signaling offer to receiver.
-3. Receiver answers; both peers exchange WebRTC signals.
-4. Call accepted state updated via REST.
-5. On hangup, `/call/:id/end` stores final status and duration.
-6. Call history panel fetches and displays past calls.
+- PORT (recommended 5001 for local parity)
+- NODE_ENV
+- MONGO_URI or DATABASE_URL
+- ACCESS_TOKEN_SECRET
+- REFRESH_TOKEN_SECRET
+- CLIENT_ENDPOINT / CLIENT_ENDPOINTS
+- DEFAULT_PICTURE
+- DEFAULT_STATUS
+- DEFAULT_GROUP_PICTURE
+- CLOUDINARY_CLOUD_NAME (optional)
+- CLOUDINARY_UPLOAD_PRESET (optional)
 
----
+### 10.2 Frontend (frontend/.env)
 
-## 11. Environment Variables
+- REACT_APP_API_ENDPOINT (example: http://localhost:5001/api/v1)
+- REACT_APP_CLOUD_NAME2 (optional)
+- REACT_APP_CLOUD_SECRET2 (optional)
 
-## 11.1 Backend (`backend/.env`)
+## 11. Local Run
 
-- `PORT`
-- `NODE_ENV`
-- `MONGO_URI` or `DATABASE_URL`
-- `ACCESS_TOKEN_SECRET`
-- `REFRESH_TOKEN_SECRET`
-- `CLIENT_ENDPOINT` / `CLIENT_ENDPOINTS`
-- `DEFAULT_PICTURE`
-- `DEFAULT_STATUS`
-- `DEFAULT_GROUP_PICTURE`
-- `CLOUDINARY_CLOUD_NAME` (optional)
-- `CLOUDINARY_UPLOAD_PRESET` (optional)
-
-## 11.2 Frontend (`frontend/.env`)
-
-- `REACT_APP_API_ENDPOINT`
-- optional Cloudinary values used by upload utility:
-  - `REACT_APP_CLOUD_NAME2`
-  - `REACT_APP_CLOUD_SECRET2`
-
----
-
-## 12. Build and Run
-
-## 12.1 Backend
+### Backend
 
 ```bash
 cd backend
@@ -645,7 +446,7 @@ npm install
 npm run dev
 ```
 
-## 12.2 Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -653,39 +454,9 @@ npm install
 npm start
 ```
 
-## 12.3 Production build (frontend)
+### Frontend Production Build
 
 ```bash
 cd frontend
 npm run build
 ```
-
----
-
-## 13. Key Implementation Notes
-
-- API compatibility: server mounts routes under both `/api/v1` and root for compatibility.
-- Upload reliability: if Cloudinary is unavailable, local upload fallback keeps feature functional.
-- Security baseline: JWT-protected routes, request sanitization, and CORS origin controls.
-- Multi-session sockets: one user can be connected from multiple browser sessions.
-- Message visibility: blocked users are filtered in socket delivery path.
-
----
-
-## 14. Feature Checklist (Current)
-
-- Auth (register/login/refresh/logout): Implemented
-- Profile update + avatar upload: Implemented
-- 1:1 messaging: Implemented
-- Group chat management: Implemented
-- Typing indicator: Implemented
-- Message status (sent/delivered/read): Implemented
-- Poll messages and voting: Implemented
-- Starred messages: Implemented
-- Delete message (self/everyone): Implemented
-- Disappearing messages: Implemented
-- Status/stories: Implemented
-- Audio/video calling: Implemented (Socket signaling + call history)
-- App lock PIN: Implemented
-- Notification settings + per-chat mute: Implemented
-- Call history and deletion: Implemented

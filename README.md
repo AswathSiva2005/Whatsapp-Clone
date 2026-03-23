@@ -1,36 +1,41 @@
 ## GitHub Repository
+
 Github - https://github.com/AswathSiva2005/Whatsapp-Clone.git
 
 ## Live Demo
+
 Demo Link - https://aswath-whatsapp-clone.vercel.app/
 
-
 ## Run Locally
+
 ### 1. Start backend
+
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+
 Backend runs on http://localhost:8000
 
 ### 2. Start frontend
+
 ```bash
 cd frontend
 npm install
 npm start
 ```
+
 Frontend runs on http://localhost:3000
 
-
 ## Tech Stack
+
 - Frontend: React, Redux Toolkit, Socket.IO Client
 - Backend: Node.js, Express, Socket.IO
 - Database: MongoDB
 
-
-
 ## Environment Variables
+
 ### Backend (.env inside backend folder)
 
 Create backend/.env with:
@@ -63,15 +68,15 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_UPLOAD_PRESET=
 ```
 
-
 ### Frontend (.env inside frontend folder)
 
 Create frontend/.env with:
+
 ```env
 REACT_APP_API_ENDPOINT=http://localhost:8000/api/v1
 ```
-Frontend runs on http://localhost:3000
 
+Frontend runs on http://localhost:3000
 
 # WhatsApp Web Clone (Full Stack)
 
@@ -134,6 +139,75 @@ Simplified WhatsApp Web style chat application built with:
 - Reusable React components for sidebar, messages, actions, header, etc.
 - Mongoose schemas for users, conversations, messages, statuses
 
+### 7. Group Messaging
+
+- Create group conversations with multiple users
+- Add/remove group members
+- Group admin capabilities and admin transfer
+- Group profile with name, picture, and description
+- Only admin can modify group settings
+
+### 8. Starred Messages
+
+- Star/unstar individual messages
+- Toggle star status with UI feedback
+- Dedicated starred messages panel
+- Persistent storage in database
+- List all starred messages by user
+
+### 9. Message Management
+
+- Delete message for self (visible to others)
+- Delete message for everyone (removed for all participants)
+- Poll messages with voting functionality
+- Vote on polls and view poll results
+- Disappearing messages with auto-delete after timeout
+- Per-user disappearing message settings per conversation
+
+### 10. Status/Stories
+
+- Create and upload status updates (text/image/video)
+- Auto-expiry after 24 hours
+- View status updates from contacts
+- Like and reply to statuses
+- Delete personal statuses
+
+### 11. Audio/Video Calls
+
+- Initiate voice and video calls
+- Call signaling through Socket.IO
+- Incoming call notifications
+- Accept or decline calls
+- End active calls
+- Call history tracking and retrieval
+- Delete call history
+
+### 12. User Features
+
+- User profile management and picture upload
+- Search users by name or phone number
+- Block/unblock users
+- App lock with PIN protection
+- Notification settings with per-conversation mute control
+- Contact management with nickname assignment
+
+### 13. File Uploads & Media
+
+- Image and file upload capabilities
+- Cloudinary integration with backend fallback
+- Automatic format normalization
+- Static file serving from /uploads directory
+- Profile pictures, group pictures, message attachments
+
+### 14. Authentication & Security
+
+- JWT-based access token authentication
+- Refresh token mechanism with HTTP-only cookies
+- Automatic token refresh on expiry (401 response handling)
+- Secure session persistence with Redux
+- Protected routes and API endpoints
+- Token fallback from session storage for resilience
+
 ## Project Structure
 
 ```text
@@ -159,7 +233,6 @@ frontend/
 - Node.js 20.x
 - npm 10+
 - MongoDB instance (local or Atlas)
-
 
 ## Basic Usage
 
@@ -199,6 +272,15 @@ Base URL: /api/v1
 - DELETE /message/:messageId
 - GET /message/starred
 
+## Reliability & Error Handling
+
+- **Token Refresh on 401**: Automatic token refresh and retry on expired access tokens
+- **Message Menu Coordination**: Single menu open at a time using custom event propagation
+- **Orphan Data Cleanup**: Automatic filtering of deleted user conversations from sidebar
+- **Safe Data Access**: Optional chaining and default values prevent crashes from undefined fields
+- **CORS Configuration**: Cross-origin resource policy configured for image serving between frontend and backend
+- **Session Persistence**: Redux session storage with fallback token recovery for resilience
+
 ## Build
 
 ```bash
@@ -210,12 +292,3 @@ npm run build
 
 - If Cloudinary variables are not set, profile uploads are stored in backend/uploads and served as static files.
 - Ensure the frontend URL is included in backend CORS config via CLIENT_ENDPOINT or CLIENT_ENDPOINTS.
-
-
-
-
-
-
-
-
-
