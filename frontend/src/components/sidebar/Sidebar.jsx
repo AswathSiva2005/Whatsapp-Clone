@@ -31,7 +31,12 @@ const resolveApiEndpoint = () => {
 
 const API_ENDPOINT = resolveApiEndpoint();
 
-export default function Sidebar({ onlineUsers, typing }) {
+export default function Sidebar({
+  onlineUsers,
+  typing,
+  openAddContactPanel = false,
+  onAddContactPanelOpened,
+}) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
@@ -185,7 +190,10 @@ export default function Sidebar({ onlineUsers, typing }) {
 
       <section className="flex-1 w-full min-w-0 md:max-w-[360px] dark:bg-[#111b21] overflow-hidden">
         {/*Sidebar Header*/}
-        <SidebarHeader />
+        <SidebarHeader
+          openAddContactPanel={openAddContactPanel}
+          onAddContactPanelOpened={onAddContactPanelOpened}
+        />
 
         {activeView === "status" ? (
           <StatusPanel embedded onCloseEmbedded={() => setActiveView("all")} />

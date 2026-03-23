@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+import { setUser } from "./userSlice";
 
 const resolveApiEndpoint = () => {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
@@ -123,7 +124,7 @@ export const createGroupConversation = createAsyncThunk(
 );
 export const updateGroupConversation = createAsyncThunk(
   "conervsation/update_group",
-  async (values, { rejectWithValue }) => {
+  async (values, { rejectWithValue, dispatch }) => {
     const { token, conversationId, name, description, picture } = values;
     try {
       const { data } = await axios.patch(
@@ -137,7 +138,37 @@ export const updateGroupConversation = createAsyncThunk(
       );
       return data;
     } catch (error) {
-      return rejectWithValue(error.response.data.error.message);
+        if (error?.response?.status === 401) {
+          try {
+            const refresh = await axios.post(
+              `${resolveApiEndpoint()}/auth/refreshtoken`,
+              {},
+              { withCredentials: true }
+            );
+
+            const refreshedToken = refresh?.data?.user?.token;
+            if (refreshedToken) {
+              dispatch(setUser({ token: refreshedToken }));
+
+              const retry = await axios.patch(
+                `${CONVERSATION_ENDPOINT}/group/${conversationId}`,
+                { name, description, picture },
+                {
+                  headers: {
+                    Authorization: `Bearer ${refreshedToken}`,
+                  },
+                }
+              );
+              return retry.data;
+            }
+          } catch {
+            // fall through to reject below
+          }
+        }
+
+        return rejectWithValue(
+          error?.response?.data?.error?.message || "Failed to update group."
+        );
     }
   }
 );

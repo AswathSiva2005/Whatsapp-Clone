@@ -1,16 +1,27 @@
-import { DotsIcon } from "../../../svg";
+import { AddContactIcon, DotsIcon } from "../../../svg";
 import { useEffect, useRef, useState } from "react";
 import Menu from "./Menu";
 import { CreateGroup } from "./createGroup";
 import SettingsPanel from "./SettingsPanel";
 import StarredMessagesPanel from "./StarredMessagesPanel";
+import AddContactPanel from "./AddContactPanel";
 
-export default function SidebarHeader() {
+export default function SidebarHeader({
+  openAddContactPanel = false,
+  onAddContactPanelOpened,
+}) {
   const [showMenu, setShowMenu] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showStarredMessages, setShowStarredMessages] = useState(false);
+  const [showAddContactPanel, setShowAddContactPanel] = useState(false);
   const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!openAddContactPanel) return;
+    setShowAddContactPanel(true);
+    onAddContactPanelOpened?.();
+  }, [openAddContactPanel, onAddContactPanelOpened]);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -48,7 +59,16 @@ export default function SidebarHeader() {
             <li>
               <button
                 className="w-9 h-9 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1 text-dark_svg_1 text-xl"
-                title="New chat"
+                title="Add contact"
+                onClick={() => setShowAddContactPanel(true)}
+              >
+                <AddContactIcon className="dark:fill-dark_svg_1" />
+              </button>
+            </li>
+            <li>
+              <button
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:dark:bg-dark_hover_1 text-dark_svg_1 text-xl"
+                title="New group"
                 onClick={() => setShowCreateGroup(true)}
               >
                 +
@@ -82,6 +102,9 @@ export default function SidebarHeader() {
       {showSettings && <SettingsPanel setShowSettings={setShowSettings} />}
       {showStarredMessages && (
         <StarredMessagesPanel setShowStarredMessages={setShowStarredMessages} />
+      )}
+      {showAddContactPanel && (
+        <AddContactPanel onClose={() => setShowAddContactPanel(false)} />
       )}
     </>
   );

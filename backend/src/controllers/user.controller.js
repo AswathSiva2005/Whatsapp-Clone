@@ -12,6 +12,10 @@ import {
   mapNotificationSettings,
   setConversationMuteForUser,
   updateUserNotificationSettings,
+  getUserContacts,
+  createOrUpdateContact,
+  updateContactNickname,
+  listUsersForSelection,
 } from "../services/user.service.js";
 import axios from "axios";
 import FormData from "form-data";
@@ -284,6 +288,66 @@ export const setConversationMuteHandler = async (req, res, next) => {
         notificationSettings: settings,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getContactsHandler = async (req, res, next) => {
+  try {
+    const contacts = await getUserContacts(req.user.userId);
+    res.status(200).json({ contacts });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createContactHandler = async (req, res, next) => {
+  try {
+    const { firstName, lastName, countryCode, phone, syncToPhone } = req.body;
+    const result = await createOrUpdateContact(req.user.userId, {
+      firstName,
+      lastName,
+      countryCode,
+      phone,
+      syncToPhone,
+    });
+
+    res.status(200).json({
+      message: "Contact saved successfully.",
+      contact: result.contact,
+      contacts: result.contacts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateContactNicknameHandler = async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
+    const { nickname } = req.body;
+
+    const result = await updateContactNickname(
+      req.user.userId,
+      contactId,
+      nickname
+    );
+
+    res.status(200).json({
+      message: "Nickname updated successfully.",
+      contact: result.contact,
+      contacts: result.contacts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listUsersHandler = async (req, res, next) => {
+  try {
+    const users = await listUsersForSelection(req.user.userId);
+    res.status(200).json(users);
   } catch (error) {
     next(error);
   }

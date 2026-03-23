@@ -12,6 +12,7 @@ import SocketContext from "../../../context/SocketContext";
 import {
   getConversationName,
   getConversationPicture,
+  getNicknameForUser,
 } from "../../../utils/chat";
 import ContactInfoDrawer from "./ContactInfoDrawer";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
@@ -26,6 +27,16 @@ function ChatHeader({
   const { activeConversation } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.user);
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const otherUser = activeConversation?.isGroup
+    ? null
+    : (activeConversation.users || []).find(
+        (member) => String(member?._id || member || "") !== String(user._id || "")
+      );
+  const otherUserId = String(otherUser?._id || otherUser || "");
+  const nickname = getNicknameForUser(user.contacts, otherUserId);
+  const displayName = activeConversation?.isGroup
+    ? activeConversation.name
+    : nickname || getConversationName(user, activeConversation.users) || "User";
 
   return (
     <div className="h-[59px] dark:bg-dark_bg_2 flex items-center p16 select-none relative">
@@ -61,9 +72,7 @@ function ChatHeader({
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = activeConversation.isGroup
                     ? getTwoLetterAvatarUrl(activeConversation.name)
-                    : getTwoLetterAvatarUrl(
-                        getConversationName(user, activeConversation.users)
-                      );
+                    : getTwoLetterAvatarUrl(displayName);
                 }}
                 className="w-full h-full rounded-full object-cover"
               />
@@ -73,11 +82,7 @@ function ChatHeader({
               <h1 className="dark:text-white text-sm sm:text-md font-bold truncate">
                 {activeConversation.isGroup
                   ? activeConversation.name
-                  : capitalize(
-                      getConversationName(user, activeConversation.users).split(
-                        " "
-                      )[0]
-                    )}
+                  : capitalize(displayName)}
               </h1>
               <span className="text-xs dark:text-dark_svg_2">
                 {online ? "online" : ""}

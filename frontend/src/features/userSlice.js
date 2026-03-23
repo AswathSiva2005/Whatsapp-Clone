@@ -9,6 +9,7 @@ const resolveApiEndpoint = () => {
 };
 
 const AUTH_ENDPOINT = `${resolveApiEndpoint()}/auth`;
+const USER_ENDPOINT = `${resolveApiEndpoint()}/user`;
 
 const initialState = {
   status: "",
@@ -28,6 +29,7 @@ const initialState = {
       muteLoginNotifications: false,
       mutedConversations: [],
     },
+    contacts: [],
   },
 };
 
@@ -58,6 +60,76 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+export const fetchContacts = createAsyncThunk(
+  "user/contacts",
+  async (token, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get(`${USER_ENDPOINT}/contacts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return data?.contacts || [];
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data?.error?.message || "Failed to load contacts."
+      );
+    }
+  }
+);
+
+export const createContact = createAsyncThunk(
+  "user/createContact",
+  async (values, { rejectWithValue }) => {
+    try {
+      const { token, firstName, lastName, countryCode, phone, syncToPhone } = values;
+      const { data } = await axios.post(
+        `${USER_ENDPOINT}/contacts`,
+        {
+          firstName,
+          lastName,
+          countryCode,
+          phone,
+          syncToPhone,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data?.error?.message || "Failed to save contact."
+      );
+    }
+  }
+);
+
+export const updateContactNickname = createAsyncThunk(
+  "user/updateContactNickname",
+  async (values, { rejectWithValue }) => {
+    try {
+      const { token, contactId, nickname } = values;
+      const { data } = await axios.patch(
+        `${USER_ENDPOINT}/contacts/${contactId}/nickname`,
+        { nickname },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data?.error?.message || "Failed to update nickname."
+      );
+    }
+  }
+);
+
 export const userSlice = createSlice({
   name: "user",
   initialState,
@@ -80,6 +152,7 @@ export const userSlice = createSlice({
           muteLoginNotifications: false,
           mutedConversations: [],
         },
+        contacts: [],
       };
     },
     setUser: (state, action) => {
@@ -104,6 +177,9 @@ export const userSlice = createSlice({
             ...initialState.user.notificationSettings,
             ...(action.payload.user?.notificationSettings || {}),
           },
+          contacts: Array.isArray(action.payload.user?.contacts)
+            ? action.payload.user.contacts
+            : [],
         };
       })
       .addCase(registerUser.rejected, (state, action) => {
@@ -123,11 +199,27 @@ export const userSlice = createSlice({
             ...initialState.user.notificationSettings,
             ...(action.payload.user?.notificationSettings || {}),
           },
+          contacts: Array.isArray(action.payload.user?.contacts)
+            ? action.payload.user.contacts
+            : [],
         };
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
+      })
+      .addCase(fetchContacts.fulfilled, (state, action) => {
+        state.user.contacts = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(createContact.fulfilled, (state, action) => {
+        if (Array.isArray(action.payload?.contacts)) {
+          state.user.contacts = action.payload.contacts;
+        }
+      })
+      .addCase(updateContactNickname.fulfilled, (state, action) => {
+        if (Array.isArray(action.payload?.contacts)) {
+          state.user.contacts = action.payload.contacts;
+        }
       });
   },
 });

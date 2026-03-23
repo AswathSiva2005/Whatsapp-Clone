@@ -31,7 +31,7 @@ export const create_open_conversation = async (req, res, next) => {
       let reciever_user = await findUser(receiver_id);
       let convoData = {
         name: reciever_user.name,
-        picture: reciever_user.picture,
+        picture: reciever_user.picture || "",
         isGroup: false,
         users: [sender_id, receiver_id],
       };

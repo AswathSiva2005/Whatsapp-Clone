@@ -1,12 +1,14 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setUser } from "../../../features/userSlice";
+import { createContact, setUser, updateContactNickname } from "../../../features/userSlice";
 import { CloseIcon } from "../../../svg";
 import {
+  getDisplayNameForUser,
   getConversationId,
   getConversationName,
   getConversationPicture,
+  getNicknameForUser,
 } from "../../../utils/chat";
 import {
   addMembersToGroupConversation,
@@ -42,8 +44,13 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
   const [memberSearchResults, setMemberSearchResults] = useState([]);
   const [selectedMembersToAdd, setSelectedMembersToAdd] = useState([]);
   const [disappearValue, setDisappearValue] = useState("off");
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [nicknameBusy, setNicknameBusy] = useState(false);
 
   const isGroup = activeConversation?.isGroup;
+  const nicknameTargetId = activeConversation?._id && !activeConversation?.isGroup
+    ? getConversationId(user, activeConversation.users || [])
+    : "";
 
   useEffect(() => {
     if (!isGroup) return;
@@ -109,14 +116,30 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     activeConversation?.users,
   ]);
 
+  useEffect(() => {
+    if (isGroup || !nicknameTargetId) {
+      setNicknameDraft("");
+      return;
+    }
+    setNicknameDraft(getNicknameForUser(user.contacts, nicknameTargetId) || "");
+  }, [isGroup, user.contacts, nicknameTargetId]);
+
   if (!activeConversation?._id) return null;
 
   const targetId = isGroup
     ? ""
     : getConversationId(user, activeConversation.users || []);
+  const targetUser = isGroup
+    ? null
+    : (activeConversation.users || []).find((u) => String(u._id) !== String(user._id));
+  const targetContact = (user.contacts || []).find((contact) => {
+    const linkedId = contact?.user?._id || contact?.user;
+    return String(linkedId || "") === String(targetId || "");
+  });
   const title = isGroup
     ? activeConversation.name
-    : getConversationName(user, activeConversation.users || []);
+    : getDisplayNameForUser(user.contacts, targetUser) ||
+      getConversationName(user, activeConversation.users || []);
   const picture = isGroup
     ? activeConversation.picture
     : getConversationPicture(user, activeConversation.users || []);
@@ -126,6 +149,7 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
   const status = isGroup
     ? ""
     : (activeConversation.users || []).find((u) => u._id !== user._id)?.status;
+
   const isAdmin =
     isGroup &&
     String(activeConversation.admin?._id || activeConversation.admin) ===
@@ -225,6 +249,54 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
     }
   };
 
+  const saveNickname = async () => {
+    if (isGroup || !targetUser?._id || nicknameBusy) return;
+    setNicknameBusy(true);
+    try {
+      let contactId = targetContact?._id;
+
+      if (!contactId) {
+        const fallbackCreate = await dispatch(
+          createContact({
+            token,
+            firstName: targetUser?.name?.split(" ")?.[0] || targetUser?.name || "Contact",
+            lastName:
+              targetUser?.name?.split(" ")?.slice(1).join(" ") || "",
+            countryCode: "+1",
+            phone: targetUser?.phone || "",
+            syncToPhone: false,
+          })
+        );
+
+        if (fallbackCreate?.error) {
+          alert(fallbackCreate.payload || "Failed to create contact for nickname.");
+          return;
+        }
+
+        contactId = fallbackCreate?.payload?.contact?._id;
+      }
+
+      if (!contactId) {
+        alert("Could not resolve contact entry for nickname.");
+        return;
+      }
+
+      const result = await dispatch(
+        updateContactNickname({
+          token,
+          contactId,
+          nickname: nicknameDraft,
+        })
+      );
+
+      if (result?.error) {
+        alert(result.payload || "Failed to update nickname.");
+      }
+    } finally {
+      setNicknameBusy(false);
+    }
+  };
+
   const clearChat = async () => {
     if (busy || !window.confirm("Are you sure you want to clear this chat?")) return;
     setBusy(true);
@@ -302,10 +374,12 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
         })
       );
 
-      if (result?.payload?._id) {
+      if (result?.meta?.requestStatus === "fulfilled" && result?.payload?._id) {
         dispatch(upsertConversationFromServer(result.payload));
+        alert("Group updated successfully");
+      } else {
+        alert(result?.payload || "Failed to update group");
       }
-      alert("Group updated successfully");
     } catch {
       alert("Failed to update group");
     } finally {
@@ -445,6 +519,27 @@ export default function ContactInfoDrawer({ activeConversation, onClose }) {
           <div className="dark:bg-dark_bg_1 mt-2 p-4 sm:p-5 border-b dark:border-b-dark_border_2">
             <p className="text-xs sm:text-sm dark:text-dark_text_2 mb-2">About</p>
             <p className="dark:text-dark_text_1 text-sm">{status || "Hey there! I am using WhatsApp."}</p>
+
+            <div className="mt-4 border-t dark:border-t-dark_border_2 pt-4">
+              <p className="text-xs sm:text-sm dark:text-dark_text_2 mb-2">Nickname (only for you)</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="flex-1 rounded-md bg-[#1f2c33] px-3 py-2 text-sm dark:text-dark_text_1 outline-none"
+                  value={nicknameDraft}
+                  onChange={(e) => setNicknameDraft(e.target.value)}
+                  placeholder="Enter nickname"
+                  maxLength={40}
+                />
+                <button
+                  className="px-3 py-2 rounded-md bg-green_1 text-[#0b141a] text-sm font-semibold disabled:opacity-50"
+                  onClick={saveNickname}
+                  disabled={nicknameBusy || !targetUser?._id}
+                >
+                  {nicknameBusy ? "Saving" : "Save"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -6,6 +6,7 @@ import {
   setActiveConversation,
 } from "../../../features/chatSlice";
 import {
+  getDisplayNameForUser,
   getConversationId,
   getConversationName,
   getConversationPicture,
@@ -38,6 +39,13 @@ function Conversation({
   const typingUserName = typing?.user?.name || "Someone";
   const typingUserPicture =
     typing?.user?.picture || getTwoLetterAvatarUrl(typingUserName);
+  const otherUser = convo?.isGroup
+    ? null
+    : convo.users?.find((member) => String(member?._id) !== String(user._id));
+  const displayName = convo.isGroup
+    ? convo.name
+    : getDisplayNameForUser(user.contacts, otherUser) ||
+      getConversationName(user, convo.users);
 
   const openConversation = async () => {
     if (convo.isGroup) {
@@ -81,7 +89,7 @@ function Conversation({
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = convo.isGroup
                   ? getTwoLetterAvatarUrl(convo.name)
-                  : getTwoLetterAvatarUrl(getConversationName(user, convo.users));
+                    : getTwoLetterAvatarUrl(displayName);
               }}
               className="w-full h-full object-cover "
             />
@@ -90,9 +98,7 @@ function Conversation({
           <div className="w-full flex flex-col">
             {/*Conversation name*/}
             <h1 className="font-bold flex items-center gap-x-2">
-              {convo.isGroup
-                ? convo.name
-                : capitalize(getConversationName(user, convo.users))}
+              {capitalize(displayName)}
             </h1>
             {/* Conversation message */}
             <div>
@@ -125,9 +131,9 @@ function Conversation({
                       </p>
                     ) : (
                       <p className="text-sm">
-                        {convo.latestMessage?.message.length > 25
-                          ? `${convo.latestMessage?.message.substring(0, 25)}...`
-                          : convo.latestMessage?.message}
+                        {convo.latestMessage?.message?.length > 25
+                          ? `${convo.latestMessage?.message?.substring(0, 25)}...`
+                          : convo.latestMessage?.message || ""}
                       </p>
                     )
                   )}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EyeIcon, EyeOffIcon } from "../../svg/Eye";
 
 export default function AuthInput({
   name,
@@ -22,7 +23,7 @@ export default function AuthInput({
       </label>
       <div className="relative">
         <input
-          className="w-full dark:bg-dark_bg_3 text-base py-2 px-4 rounded-lg outline-none"
+          className="w-full dark:bg-dark_bg_3 text-base py-2 px-4 pr-10 rounded-lg outline-none"
           type={inputType}
           placeholder={placeholder}
           {...register(name)}
@@ -31,9 +32,14 @@ export default function AuthInput({
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium dark:text-dark_text_1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-green_1 hover:text-green_2 transition ease-in duration-200"
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? "Hide" : "Show"}
+            {showPassword ? (
+              <EyeOffIcon className="w-5 h-5" />
+            ) : (
+              <EyeIcon className="w-5 h-5" />
+            )}
           </button>
         ) : null}
       </div>

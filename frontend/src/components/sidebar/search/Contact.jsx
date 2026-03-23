@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import SocketContext from "../../../context/SocketContext";
 import { open_create_conversation } from "../../../features/chatSlice";
+import { getDisplayNameForUser } from "../../../utils/chat";
 
 function Contact({ contact, setSearchResults, socket }) {
   const dispatch = useDispatch();
@@ -10,6 +11,7 @@ function Contact({ contact, setSearchResults, socket }) {
     receiver_id: contact._id,
     token,
   };
+  const displayName = getDisplayNameForUser(user.contacts, contact) || contact.name;
   const openConversation = async () => {
     try {
       let result = await dispatch(open_create_conversation(values));
@@ -36,7 +38,7 @@ function Contact({ contact, setSearchResults, socket }) {
           <div className="relative min-w-[50px] max-w-[50px] h-[50px] rounded-full overflow-hidden">
             <img
               src={contact.picture}
-              alt={contact.name}
+              alt={displayName}
               className="w-full h-full object-cover "
             />
           </div>
@@ -44,7 +46,7 @@ function Contact({ contact, setSearchResults, socket }) {
           <div className="w-full flex flex-col">
             {/*Conversation name*/}
             <h1 className="font-bold flex items-center gap-x-2">
-              {contact.name}
+              {displayName}
             </h1>
             {/* Conversation status */}
             <div>

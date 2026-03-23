@@ -1,11 +1,35 @@
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import moment from "moment";
 import { ReturnIcon } from "../../../svg";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
+import { setUser } from "../../../features/userSlice";
+
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
+const getPersistedToken = () => {
+  try {
+    const persistedRoot = sessionStorage.getItem("persist:user");
+    if (!persistedRoot) return "";
+
+    const parsedRoot = JSON.parse(persistedRoot);
+    if (!parsedRoot?.user) return "";
+
+    const parsedUserSlice = JSON.parse(parsedRoot.user);
+    return parsedUserSlice?.user?.token || "";
+  } catch {
+    return "";
+  }
+};
 
 export default function StarredMessagesPanel({ setShowStarredMessages }) {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,14 +38,40 @@ export default function StarredMessagesPanel({ setShowStarredMessages }) {
     const loadStarredMessages = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(
-          `${process.env.REACT_APP_API_ENDPOINT}/message/starred`,
-          {
+        const API_ENDPOINT = resolveApiEndpoint();
+        const token = user?.token || getPersistedToken();
+
+        const getStarred = (tokenValue) =>
+          axios.get(`${API_ENDPOINT}/message/starred`, {
             headers: {
-              Authorization: `Bearer ${user.token}`,
+              Authorization: `Bearer ${tokenValue}`,
             },
+          });
+
+        let response;
+        try {
+          response = await getStarred(token);
+        } catch (error) {
+          if (error?.response?.status !== 401) {
+            throw error;
           }
-        );
+
+          const refresh = await axios.post(
+            `${API_ENDPOINT}/auth/refreshtoken`,
+            {},
+            { withCredentials: true }
+          );
+
+          const refreshedToken = refresh?.data?.user?.token;
+          if (!refreshedToken) {
+            throw error;
+          }
+
+          dispatch(setUser({ token: refreshedToken }));
+          response = await getStarred(refreshedToken);
+        }
+
+        const { data } = response;
         setMessages(data || []);
       } catch (error) {
         setMessages([]);
@@ -31,7 +81,7 @@ export default function StarredMessagesPanel({ setShowStarredMessages }) {
     };
 
     loadStarredMessages();
-  }, [user.token]);
+  }, [dispatch, user.token]);
 
   return (
     <div className="fixed inset-0 z-50 bg-dark_bg_2 p-4">

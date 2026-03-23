@@ -68,7 +68,21 @@ export const getUserConversations = async (user_id) => {
         path: "latestMessage.sender",
         select: "name email picture status",
       });
-      conversations = results;
+      conversations = (results || []).filter((conversation) => {
+        if (conversation.isGroup) {
+          return true;
+        }
+
+        const users = (conversation.users || []).filter(Boolean);
+        const hasCurrentUser = users.some(
+          (member) => String(member?._id || member) === String(user_id)
+        );
+        const hasOtherUser = users.some(
+          (member) => String(member?._id || member) !== String(user_id)
+        );
+
+        return hasCurrentUser && hasOtherUser;
+      });
     })
     .catch((err) => {
       throw createHttpError.BadRequest("Oops...Something went wrong !");

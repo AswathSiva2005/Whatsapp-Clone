@@ -75,6 +75,48 @@ const userSchema = mongoose.Schema(
         },
       ],
     },
+    contacts: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "UserModel",
+          default: null,
+        },
+        firstName: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        lastName: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        countryCode: {
+          type: String,
+          trim: true,
+          default: "+1",
+        },
+        phone: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        nickname: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        picture: {
+          type: String,
+          default: "",
+        },
+        syncToPhone: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
   {
     collection: "users",

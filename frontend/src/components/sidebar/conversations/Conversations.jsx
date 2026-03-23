@@ -17,6 +17,21 @@ export default function Conversations({
   const { user } = useSelector((state) => state.user);
 
   const baseConversations = (conversations || [])
+    .filter((conversation) => {
+      if (conversation.isGroup) {
+        return true;
+      }
+
+      const participants = (conversation.users || []).filter(Boolean);
+      const hasCurrentUser = participants.some(
+        (member) => String(member?._id || member) === String(user?._id || "")
+      );
+      const hasOtherUser = participants.some(
+        (member) => String(member?._id || member) !== String(user?._id || "")
+      );
+
+      return hasCurrentUser && hasOtherUser;
+    })
     .filter(
       (c) =>
         c.latestMessage ||

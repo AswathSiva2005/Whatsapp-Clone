@@ -8,17 +8,74 @@ import {
   removeMessageById,
   toggleMessageStarred,
 } from "../../../features/chatSlice";
+import { setUser } from "../../../features/userSlice";
 import { getTwoLetterAvatarUrl } from "../../../utils/avatar";
+
+const resolveApiEndpoint = () => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return "http://localhost:5001/api/v1";
+  }
+  return process.env.REACT_APP_API_ENDPOINT || "http://localhost:5001/api/v1";
+};
+
+const getPersistedToken = () => {
+  try {
+    const persistedRoot = sessionStorage.getItem("persist:user");
+    if (!persistedRoot) return "";
+
+    const parsedRoot = JSON.parse(persistedRoot);
+    if (!parsedRoot?.user) return "";
+
+    const parsedUserSlice = JSON.parse(parsedRoot.user);
+    return parsedUserSlice?.user?.token || "";
+  } catch (error) {
+    return "";
+  }
+};
 
 export default function Message({ message, me, highlights = [] }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
+  const API_ENDPOINT = resolveApiEndpoint();
+  const authToken = user?.token || getPersistedToken();
   const [showActions, setShowActions] = useState(false);
   const longPressTimer = useRef(null);
   const menuRef = useRef(null);
   const isStarred = (message.starredBy || []).some(
     (id) => String(id) === String(user._id)
   );
+
+  const getAuthHeaders = (tokenValue) => ({
+    headers: {
+      Authorization: `Bearer ${tokenValue}`,
+    },
+  });
+
+  const runWithAuthRetry = async (requestFactory) => {
+    const firstToken = authToken;
+
+    try {
+      return await requestFactory(firstToken);
+    } catch (error) {
+      if (error?.response?.status !== 401) {
+        throw error;
+      }
+
+      const refreshResponse = await axios.post(
+        `${API_ENDPOINT}/auth/refreshtoken`,
+        {},
+        { withCredentials: true }
+      );
+
+      const refreshedToken = refreshResponse?.data?.user?.token;
+      if (!refreshedToken) {
+        throw error;
+      }
+
+      dispatch(setUser({ token: refreshedToken }));
+      return await requestFactory(refreshedToken);
+    }
+  };
 
   const handleTouchStart = () => {
     longPressTimer.current = setTimeout(() => {
@@ -34,6 +91,13 @@ export default function Message({ message, me, highlights = [] }) {
 
   const handleMessageClick = (e) => {
     e.stopPropagation();
+    if (!showActions) {
+      window.dispatchEvent(
+        new CustomEvent("message-menu-open", {
+          detail: { messageId: message._id },
+        })
+      );
+    }
     setShowActions((prev) => !prev);
   };
 
@@ -41,22 +105,42 @@ export default function Message({ message, me, highlights = [] }) {
     e.stopPropagation();
   };
 
-  // Close menu when clicking outside
+  // Close this menu when another message menu is opened
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    const handleAnotherMenuOpen = (event) => {
+      if (event.detail?.messageId !== message._id) {
         setShowActions(false);
       }
     };
 
-    if (showActions) {
-      document.addEventListener("click", handleClickOutside);
-    }
+    window.addEventListener("message-menu-open", handleAnotherMenuOpen);
+    return () => {
+      window.removeEventListener("message-menu-open", handleAnotherMenuOpen);
+    };
+  }, [message._id]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!showActions) {
+        return;
+      }
+
+      const thisMessageContainer = event.target.closest(
+        `[data-message-id="${message._id}"]`
+      );
+
+      if (!thisMessageContainer && menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowActions(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
 
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, [showActions]);
+  }, [message._id, showActions]);
 
   const toggleStarMessage = async () => {
     const confirmText = isStarred
@@ -69,14 +153,12 @@ export default function Message({ message, me, highlights = [] }) {
     }
 
     try {
-      const { data } = await axios.patch(
-        `${process.env.REACT_APP_API_ENDPOINT}/message/${message._id}/star`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        }
+      const { data } = await runWithAuthRetry((tokenValue) =>
+        axios.patch(
+          `${API_ENDPOINT}/message/${message._id}/star`,
+          {},
+          getAuthHeaders(tokenValue)
+        )
       );
       dispatch(
         toggleMessageStarred({
@@ -99,13 +181,11 @@ export default function Message({ message, me, highlights = [] }) {
     }
 
     try {
-      await axios.delete(
-        `${process.env.REACT_APP_API_ENDPOINT}/message/${message._id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        }
+      await runWithAuthRetry((tokenValue) =>
+        axios.delete(
+          `${API_ENDPOINT}/message/${message._id}`,
+          getAuthHeaders(tokenValue)
+        )
       );
       dispatch(removeMessageById(message._id));
     } catch (error) {
@@ -122,14 +202,12 @@ export default function Message({ message, me, highlights = [] }) {
     }
 
     try {
-      const { data } = await axios.patch(
-        `${process.env.REACT_APP_API_ENDPOINT}/message/${message._id}/delete-for-everyone`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        }
+      const { data } = await runWithAuthRetry((tokenValue) =>
+        axios.patch(
+          `${API_ENDPOINT}/message/${message._id}/delete-for-everyone`,
+          {},
+          getAuthHeaders(tokenValue)
+        )
       );
       // Update the message in Redux with the deleted version
       dispatch(
@@ -139,7 +217,14 @@ export default function Message({ message, me, highlights = [] }) {
         })
       );
     } catch (error) {
-      alert("Failed to delete message for everyone. Only the sender can delete for everyone.");
+      const statusCode = error?.response?.status;
+      if (statusCode === 401) {
+        alert("Your session expired. Please login again.");
+      } else if (statusCode === 403) {
+        alert("Only the sender can delete for everyone.");
+      } else {
+        alert("Failed to delete message for everyone. Please try again.");
+      }
     } finally {
       setShowActions(false);
     }
@@ -199,6 +284,8 @@ export default function Message({ message, me, highlights = [] }) {
       className={`w-full flex mt-2 space-x-3 max-w-xs ${
         me ? "ml-auto justify-end " : ""
       }`}
+      data-message-container
+      data-message-id={message._id}
     >
       {/*Message Container*/}
       <div className="relative">
@@ -264,7 +351,9 @@ export default function Message({ message, me, highlights = [] }) {
             <div 
               ref={menuRef}
               onClick={handleMenuClick}
-              className="absolute right-0 top-full mt-1 dark:bg-dark_bg_2 border dark:border-dark_border_2 rounded-md shadow-lg z-50 min-w-[170px]"
+              className={`absolute top-full mt-1 dark:bg-dark_bg_2 border dark:border-dark_border_2 rounded-md shadow-lg z-50 min-w-[170px] ${
+                me ? "right-0" : "left-0"
+              }`}
             >
               <button
                 type="button"

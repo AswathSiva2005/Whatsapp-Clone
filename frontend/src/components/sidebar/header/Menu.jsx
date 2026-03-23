@@ -55,9 +55,6 @@ export default function Menu({
           >
             <span>New group</span>
           </li>
-          <li className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3">
-            <span>New community</span>
-          </li>
           <li
             className="py-3 pl-5 cursor-pointer hover:bg-dark_bg_3"
             onClick={() => {
