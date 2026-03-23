@@ -92,7 +92,7 @@ export default function Call({
             ) : null}
 
             {callType === "audio" && callAccepted && !callEnded ? (
-              <audio ref={userVideo} autoPlay></audio>
+              <audio ref={userVideo} autoPlay playsInline></audio>
             ) : null}
             {/*my video*/}
             {callType === "video" && stream ? (

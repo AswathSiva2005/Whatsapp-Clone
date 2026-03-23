@@ -64,6 +64,47 @@ function Home({ socket }) {
   const callAcceptedRef = useRef(false);
   const peerSocketRef = useRef("");
   const callIdRef = useRef("");
+  const remoteStreamRef = useRef(null);
+
+  const safePlay = (element) => {
+    if (!element || typeof element.play !== "function") return;
+    const playPromise = element.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        // mobile browsers can reject autoplay until media metadata is ready
+      });
+    }
+  };
+
+  const attachRemoteStream = (incomingStream) => {
+    if (!incomingStream || !userVideo.current) return;
+    userVideo.current.srcObject = incomingStream;
+    safePlay(userVideo.current);
+  };
+
+  const attachRemoteTrack = (track, incomingStream) => {
+    if (!track || !userVideo.current) return;
+
+    const streamFromEvent = incomingStream?.[0];
+    if (streamFromEvent) {
+      attachRemoteStream(streamFromEvent);
+      return;
+    }
+
+    if (!remoteStreamRef.current) {
+      remoteStreamRef.current = new MediaStream();
+    }
+
+    const existingTrack = remoteStreamRef.current
+      .getTracks()
+      .find((t) => t.id === track.id);
+    if (!existingTrack) {
+      remoteStreamRef.current.addTrack(track);
+    }
+
+    userVideo.current.srcObject = remoteStreamRef.current;
+    safePlay(userVideo.current);
+  };
   const stopAllRingAudios = () => {
     if (typeof document === "undefined") return;
     const audioElements = Array.from(document.querySelectorAll("audio"));
@@ -92,6 +133,7 @@ function Home({ socket }) {
     if (!show || call.callType !== "video" || !stream) return;
     if (!myVideo.current) return;
     myVideo.current.srcObject = stream;
+    safePlay(myVideo.current);
   }, [show, stream, call.callType]);
 
   //join user into the socket io
@@ -141,10 +183,14 @@ function Home({ socket }) {
       setCallAccepted(false);
       setTotalSecInCall(0);
       setCall((prev) => ({ ...prev, callEnded: true, receiveingCall: false }));
+      remoteStreamRef.current = null;
       if (myVideo.current) {
         myVideo.current.srcObject = null;
       }
-      if (callAccepted) {
+      if (userVideo.current) {
+        userVideo.current.srcObject = null;
+      }
+      if (callAcceptedRef.current) {
         connectionRef?.current?.destroy();
       }
 
@@ -313,9 +359,10 @@ function Home({ socket }) {
       });
     });
     peer.on("stream", (stream) => {
-      if (userVideo.current) {
-        userVideo.current.srcObject = stream;
-      }
+      attachRemoteStream(stream);
+    });
+    peer.on("track", (track, incomingStreams) => {
+      attachRemoteTrack(track, incomingStreams);
     });
     connectionRef.current = peer;
   };
@@ -379,9 +426,10 @@ function Home({ socket }) {
       });
     });
     peer.on("stream", (stream) => {
-      if (userVideo.current) {
-        userVideo.current.srcObject = stream;
-      }
+      attachRemoteStream(stream);
+    });
+    peer.on("track", (track, incomingStreams) => {
+      attachRemoteTrack(track, incomingStreams);
     });
     peer.signal(call.signal);
     connectionRef.current = peer;
@@ -393,8 +441,12 @@ function Home({ socket }) {
     setCallAccepted(false);
     setTotalSecInCall(0);
     setCall((prev) => ({ ...prev, callEnded: true, receiveingCall: false }));
+    remoteStreamRef.current = null;
     if (myVideo.current) {
       myVideo.current.srcObject = null;
+    }
+    if (userVideo.current) {
+      userVideo.current.srcObject = null;
     }
 
     if (call.callId && token) {
@@ -426,11 +478,45 @@ function Home({ socket }) {
   //--------------------------
   const setupMedia = async (callType = "video") => {
     try {
-      const constraints = {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        return null;
+      }
+
+      const preferredConstraints =
+        callType === "video"
+          ? {
+              video: {
+                facingMode: "user",
+                width: { ideal: 640 },
+                height: { ideal: 360 },
+              },
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              },
+            }
+          : {
+              video: false,
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+              },
+            };
+
+      const fallbackConstraints = {
         video: callType === "video",
         audio: true,
       };
-      const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      let localStream;
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
+      } catch {
+        localStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      }
+
       setStream(localStream);
       return localStream;
     } catch {
